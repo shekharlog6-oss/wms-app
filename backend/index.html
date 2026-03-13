@@ -1,0 +1,2840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warehouse Management System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #f0883e;
+    --accent2: #58a6ff;
+    --accent3: #3fb950;
+    --accent4: #ff7b72;
+    --accent5: #bc8cff;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --header-h: 58px;
+    --tab-h: 46px;
+    --sidebar-w: 220px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+  /* LOGIN */
+  #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);position:fixed;inset:0;z-index:1000}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px 48px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .login-logo{text-align:center;margin-bottom:28px}
+  .login-logo .icon{font-size:42px;display:block;margin-bottom:8px}
+  .login-logo h1{font-size:20px;font-weight:700;color:var(--text);letter-spacing:.5px}
+  .login-logo p{color:var(--text2);font-size:12px;margin-top:4px}
+  .form-group{margin-bottom:18px}
+  .form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .form-group input, .form-group select, .form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:14px;outline:none;transition:border-color .2s}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+  .form-group textarea{resize:vertical;min-height:70px}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-decoration:none}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#d97706}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .btn-secondary:hover{background:var(--border)}
+  .btn-success{background:var(--accent3);color:#fff}
+  .btn-success:hover{background:#2ea043}
+  .btn-danger{background:var(--accent4);color:#fff}
+  .btn-danger:hover{background:#da3633}
+  .btn-info{background:var(--accent2);color:#fff}
+  .btn-info:hover{background:#1f6feb}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .btn-full{width:100%;justify-content:center;padding:11px}
+  .login-error{color:var(--accent4);font-size:13px;margin-top:10px;text-align:center}
+
+  /* MAIN LAYOUT */
+  #app{display:none;flex-direction:column;height:100vh}
+  #app.visible{display:flex}
+
+  /* HEADER */
+  #header{height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;z-index:100}
+  .header-logo{font-size:16px;font-weight:800;color:var(--accent);letter-spacing:.5px;display:flex;align-items:center;gap:10px;white-space:nowrap}
+  .header-logo .icon{font-size:22px}
+  .header-spacer{flex:1}
+  .header-user{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .header-time{color:var(--text3);font-size:12px;font-family:monospace}
+
+  /* TABS */
+  #tabs{height:var(--tab-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:flex-end;padding:0 20px;gap:2px;flex-shrink:0}
+  .tab-btn{padding:10px 18px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border-radius:6px 6px 0 0;white-space:nowrap}
+  .tab-btn:hover{color:var(--text);background:var(--surface2)}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  /* CONTENT */
+  #content{flex:1;display:flex;overflow:hidden}
+  .tab-panel{display:none;flex:1;overflow:hidden}
+  .tab-panel.active{display:flex}
+
+  /* SIDEBAR */
+  .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:12px 8px;flex-shrink:0;overflow-y:auto}
+  .sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s;margin-bottom:2px}
+  .sidebar-item:hover{background:var(--surface2);color:var(--text)}
+  .sidebar-item.active{background:rgba(240,136,62,.12);color:var(--accent)}
+  .sidebar-item .si-icon{font-size:16px;width:20px;text-align:center}
+  .sidebar-section{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:12px 12px 6px}
+
+  /* MAIN PANEL */
+  .main-panel{flex:1;padding:24px;overflow-y:auto;background:var(--bg)}
+
+  /* PAGE HEADER */
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+  .page-title{font-size:20px;font-weight:700;color:var(--text)}
+  .page-title span{color:var(--text3);font-size:14px;font-weight:400;margin-left:8px}
+
+  /* CARDS */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .stat-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+  .stat-value{font-size:28px;font-weight:800;color:var(--text)}
+  .stat-sub{font-size:12px;color:var(--text2)}
+  .stat-card.accent{border-color:rgba(240,136,62,.3);background:rgba(240,136,62,.05)}
+  .stat-card.blue{border-color:rgba(88,166,255,.3);background:rgba(88,166,255,.05)}
+  .stat-card.green{border-color:rgba(63,185,80,.3);background:rgba(63,185,80,.05)}
+  .stat-card.red{border-color:rgba(255,123,114,.3);background:rgba(255,123,114,.05)}
+  .stat-card.purple{border-color:rgba(188,140,255,.3);background:rgba(188,140,255,.05)}
+
+  /* TABLE */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .card-title{font-size:14px;font-weight:700}
+  .card-body{padding:16px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse}
+  th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+  td{padding:10px 14px;border-bottom:1px solid rgba(48,54,61,.6);font-size:13px;color:var(--text2)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(33,38,45,.5);color:var(--text)}
+  .badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+  .badge-green{background:rgba(63,185,80,.15);color:var(--accent3)}
+  .badge-red{background:rgba(255,123,114,.15);color:var(--accent4)}
+  .badge-orange{background:rgba(240,136,62,.15);color:var(--accent)}
+  .badge-blue{background:rgba(88,166,255,.15);color:var(--accent2)}
+  .badge-gray{background:rgba(110,118,129,.15);color:var(--text3)}
+  .badge-purple{background:rgba(188,140,255,.15);color:var(--accent5)}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 12px;flex:1;max-width:320px}
+  .search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:100%}
+  .search-box input::placeholder{color:var(--text3)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;width:560px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal-lg{width:800px}
+  .modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-title{font-size:16px;font-weight:700}
+  .modal-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px}
+  .modal-close:hover{background:var(--surface2);color:var(--text)}
+  .modal-body{padding:20px;overflow-y:auto;flex:1}
+  .modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  /* ALERTS */
+  .toast{position:fixed;top:70px;right:20px;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1;pointer-events:all}
+  .toast.success{border-left:4px solid var(--accent3)}
+  .toast.error{border-left:4px solid var(--accent4)}
+  .toast.info{border-left:4px solid var(--accent2)}
+
+  /* CHARTS */
+  .chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:20px;margin-bottom:24px}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px}
+  .chart-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+  .chart-container{position:relative;height:220px}
+
+  /* REPORT SELECT */
+  .report-selector{margin-bottom:24px}
+  .report-selector select{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 14px;font-size:14px;font-weight:600;outline:none;min-width:280px}
+  .report-selector select:focus{border-color:var(--accent)}
+
+  /* INBOUND/OUTBOUND */
+  .lines-table{width:100%;border-collapse:collapse;margin-top:12px}
+  .lines-table th{background:var(--bg);padding:8px 10px;font-size:11px;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border)}
+  .lines-table td{padding:8px 10px;border-bottom:1px solid rgba(48,54,61,.4)}
+  .lines-table td input,.lines-table td select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 8px;font-size:12px;outline:none}
+  .lines-table td input:focus,.lines-table td select:focus{border-color:var(--accent)}
+  .add-line-btn{margin-top:10px}
+
+  /* STATUS TIMELINE */
+  .status-flow{display:flex;align-items:center;gap:0;margin-bottom:20px}
+  .status-step{flex:1;text-align:center;padding:8px;font-size:11px;font-weight:700;text-transform:uppercase;background:var(--surface2);border:1px solid var(--border);color:var(--text3);letter-spacing:.5px}
+  .status-step:first-child{border-radius:6px 0 0 6px}
+  .status-step:last-child{border-radius:0 6px 6px 0}
+  .status-step.done{background:rgba(63,185,80,.15);color:var(--accent3);border-color:rgba(63,185,80,.3)}
+  .status-step.active{background:rgba(240,136,62,.15);color:var(--accent);border-color:rgba(240,136,62,.4)}
+
+  /* BACKUP */
+  .backup-list{display:flex;flex-direction:column;gap:10px}
+  .backup-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+  .backup-icon{font-size:24px}
+  .backup-info{flex:1}
+  .backup-name{font-size:13px;font-weight:600;color:var(--text)}
+  .backup-meta{font-size:11px;color:var(--text3);margin-top:2px}
+  .backup-actions{display:flex;gap:8px}
+
+  /* SCROLLBARS */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+  /* MISC */
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+  .empty-state .icon{font-size:40px;margin-bottom:12px}
+  .empty-state p{font-size:14px}
+  .divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+  .text-right{text-align:right}
+  .text-center{text-align:center}
+  .gap{display:flex;gap:8px;align-items:center}
+  select option{background:var(--surface2)}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .detail-item label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
+  .detail-item span{font-size:13px;color:var(--text)}
+
+  /* ═══════════════════════════════════════════
+     ORACLE CLOUD WMS — INVENTORY HISTORY REPORT
+     ═══════════════════════════════════════════ */
+
+  /* Report Shell */
+  .rpt-shell{background:var(--bg);min-height:100%}
+
+  /* Report Masthead — oracle-style blue band */
+  .rpt-masthead{background:linear-gradient(135deg,#0a1628 0%,#0d2045 50%,#122850 100%);border:1px solid #1a3a6e;border-radius:8px;padding:0;margin-bottom:16px;overflow:hidden}
+  .rpt-masthead-top{display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,.08)}
+  .rpt-oracle-logo{background:rgba(255,255,255,.04);padding:18px 24px;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;justify-content:center;min-width:180px}
+  .rpt-oracle-wordmark{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--accent);text-transform:uppercase}
+  .rpt-oracle-sub{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-top:2px;text-transform:uppercase}
+  .rpt-title-block{flex:1;padding:18px 24px}
+  .rpt-title{font-size:18px;font-weight:700;color:#fff;letter-spacing:.3px}
+  .rpt-subtitle{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;font-family:monospace}
+  .rpt-run-info{padding:18px 24px;text-align:right;font-size:11px;color:rgba(255,255,255,.4);line-height:1.8;font-family:monospace;border-left:1px solid rgba(255,255,255,.06)}
+  .rpt-masthead-bottom{padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .rpt-param-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace}
+  .rpt-param-chip strong{color:rgba(255,255,255,.9)}
+
+  /* KPI band */
+  .rpt-kpi-band{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .rpt-kpi{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;position:relative;overflow:hidden}
+  .rpt-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .rpt-kpi.blue::before{background:#1d4ed8}
+  .rpt-kpi.green::before{background:#16a34a}
+  .rpt-kpi.orange::before{background:#d97706}
+  .rpt-kpi.red::before{background:#dc2626}
+  .rpt-kpi.purple::before{background:#7c3aed}
+  .rpt-kpi.teal::before{background:#0891b2}
+  .rpt-kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px}
+  .rpt-kpi-value{font-size:22px;font-weight:800;color:var(--text);line-height:1}
+  .rpt-kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+  /* Filter bar */
+  .rpt-filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .rpt-filter-bar label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap}
+  .rpt-filter-bar select,.rpt-filter-bar input{background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 10px;font-size:12px;outline:none}
+  .rpt-filter-bar select:focus,.rpt-filter-bar input:focus{border-color:var(--accent)}
+  .rpt-filter-sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+
+  /* Report table — Oracle tabular style */
+  .rpt-section-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:linear-gradient(90deg,#0d2045,#122850);border:1px solid #1a3a6e;border-radius:6px 6px 0 0;margin-top:14px}
+  .rpt-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.8)}
+  .rpt-section-count{font-size:11px;color:rgba(255,255,255,.45);font-family:monospace}
+  .rpt-table-wrap{border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;margin-bottom:14px}
+  .rpt-table{width:100%;border-collapse:collapse;font-size:12px}
+  .rpt-table thead tr{background:#0d2045}
+  .rpt-table thead th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.55);white-space:nowrap;border-right:1px solid rgba(255,255,255,.04)}
+  .rpt-table thead th:last-child{border-right:none}
+  .rpt-table tbody tr{border-bottom:1px solid rgba(48,54,61,.7)}
+  .rpt-table tbody tr:last-child{border-bottom:none}
+  .rpt-table tbody tr:hover td{background:rgba(29,78,216,.06)}
+  .rpt-table tbody td{padding:8px 12px;color:var(--text2);vertical-align:middle;border-right:1px solid rgba(48,54,61,.3)}
+  .rpt-table tbody td:last-child{border-right:none}
+  .rpt-table tbody tr:nth-child(even) td{background:rgba(33,38,45,.3)}
+
+  /* Transaction type badges */
+  .txn-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-family:monospace}
+  .txn-RECEIPT{background:rgba(22,163,74,.12);color:#4ade80;border:1px solid rgba(22,163,74,.2)}
+  .txn-DISPATCH{background:rgba(234,88,12,.12);color:#fb923c;border:1px solid rgba(234,88,12,.2)}
+  .txn-ADJ_IN{background:rgba(29,78,216,.12);color:#60a5fa;border:1px solid rgba(29,78,216,.2)}
+  .txn-ADJ_OUT{background:rgba(220,38,38,.12);color:#f87171;border:1px solid rgba(220,38,38,.2)}
+
+  /* Doc status */
+  .doc-status{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-family:monospace}
+  .doc-completed{background:rgba(22,163,74,.1);color:#4ade80}
+  .doc-pending{background:rgba(217,119,6,.1);color:#fbbf24}
+  .doc-in_progress{background:rgba(29,78,216,.1);color:#60a5fa}
+  .doc-cancelled{background:rgba(220,38,38,.1);color:#f87171}
+
+  /* Running balance cell */
+  .bal-cell{font-family:monospace;font-weight:700;text-align:right}
+  .bal-pos{color:#4ade80}
+  .bal-neg{color:#f87171}
+  .bal-zero{color:var(--text3)}
+
+  /* Quantity delta arrows */
+  .qty-in{color:#4ade80;font-weight:700}
+  .qty-out{color:#fb923c;font-weight:700}
+
+  /* Group row */
+  .rpt-group-row td{background:rgba(29,78,216,.05)!important;padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);border-top:1px solid rgba(29,78,216,.15)!important}
+
+  /* Footer band */
+  .rpt-footer{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:6px;font-family:monospace}
+
+  /* Snapshot table extras */
+  .stock-IN_STOCK{color:#4ade80;font-weight:700}
+  .stock-BELOW_REORDER{color:#fbbf24;font-weight:700}
+  .stock-OUT_OF_STOCK{color:#f87171;font-weight:700}
+
+  /* Export button strip */
+  .rpt-actions{display:flex;gap:8px;align-items:center}
+  .btn-export{background:rgba(29,78,216,.15);border:1px solid rgba(29,78,216,.3);color:#60a5fa;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+  .btn-export:hover{background:rgba(29,78,216,.3)}
+
+  /* Print */
+  @media print {
+    #header,#tabs,.rpt-filter-bar .rpt-actions,button{display:none!important}
+    .rpt-masthead{background:#0d2045!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .rpt-table thead tr{background:#0d2045!important;-webkit-print-color-adjust:exact}
+    body{background:#fff}
+    .rpt-table tbody td,.rpt-table tbody tr{color:#111!important}
+  }
+
+  /* ═══════════════════════════════════════════
+     HOME DASHBOARD
+     ═══════════════════════════════════════════ */
+  .home-loading{display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3);gap:10px;font-size:14px}
+  .home-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .home-wrap{padding:20px;display:flex;flex-direction:column;gap:18px}
+
+  /* Image Carousel */
+  .home-carousel{position:relative;width:100%;height:200px;border-radius:10px;overflow:hidden;background:var(--surface2)}
+  .home-carousel-track{display:flex;height:100%;transition:transform .6s ease}
+  .home-carousel-slide{min-width:100%;height:100%;position:relative;flex-shrink:0}
+  .home-carousel-slide img{width:100%;height:100%;object-fit:cover;display:block}
+  .home-carousel-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,17,23,.7) 0%,rgba(13,17,23,.2) 50%,transparent 100%);display:flex;align-items:center;padding:0 32px}
+  .home-carousel-caption{color:#fff}
+  .home-carousel-caption h3{font-size:22px;font-weight:800;letter-spacing:.3px;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .home-carousel-caption p{font-size:13px;color:rgba(255,255,255,.75);text-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .home-carousel-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.45);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:10}
+  .home-carousel-btn:hover{background:rgba(0,0,0,.7)}
+  .home-carousel-prev{left:12px}
+  .home-carousel-next{right:12px}
+  .home-carousel-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+  .home-carousel-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);border:none;cursor:pointer;padding:0;transition:background .2s}
+  .home-carousel-dot.active{background:#fff}
+
+  /* KPI Strip */
+  .home-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .home-kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .15s,box-shadow .15s;border-left:4px solid transparent}
+  .home-kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+  .hkpi-blue{border-left-color:#1d4ed8}.hkpi-green{border-left-color:#16a34a}.hkpi-orange{border-left-color:#d97706}.hkpi-red{border-left-color:#dc2626}
+  .hkpi-icon{font-size:28px;opacity:.9}
+  .hkpi-value{font-size:26px;font-weight:800;color:var(--text);line-height:1}
+  .hkpi-label{font-size:12px;font-weight:700;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.4px}
+  .hkpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+  /* Cards */
+  .home-row{display:grid;grid-template-columns:1fr 380px;gap:14px}
+  .home-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;overflow:hidden}
+  .home-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .home-card-title{font-size:13px;font-weight:700;color:var(--text)}
+  .home-link-btn{background:none;border:none;color:var(--accent2);font-size:12px;cursor:pointer;font-weight:600}
+  .home-link-btn:hover{text-decoration:underline}
+
+  /* Tables */
+  .home-table-wrap{overflow-x:auto}
+  .home-table{width:100%;border-collapse:collapse;font-size:12px}
+  .home-table th{padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--surface2)}
+  .home-table td{padding:8px 10px;border-bottom:1px solid rgba(48,54,61,.5);color:var(--text2)}
+  .home-table tr:last-child td{border-bottom:none}
+  .home-table tr:hover td{background:rgba(33,38,45,.5);color:var(--text)}
+  .home-sku{background:rgba(255,255,255,.04);padding:2px 6px;border-radius:3px;font-family:monospace;font-size:11px;color:var(--accent)}
+  .home-ref{font-family:monospace;font-size:11px;color:var(--accent2);font-weight:600}
+  .home-loc{background:rgba(88,166,255,.08);color:var(--accent5);padding:2px 6px;border-radius:3px;font-size:10px;font-family:monospace}
+
+  /* Badges */
+  .hbadge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase}
+  .hb-green{background:rgba(63,185,80,.15);color:#4ade80}
+  .hb-orange{background:rgba(240,136,62,.15);color:#fb923c}
+  .hb-red{background:rgba(255,123,114,.15);color:#f87171}
+  .hb-blue{background:rgba(88,166,255,.15);color:#60a5fa}
+  .hb-gray{background:rgba(110,118,129,.15);color:var(--text3)}
+
+  /* Alerts */
+  .home-alerts{display:flex;flex-direction:column;gap:8px}
+  .home-alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:6px;background:var(--surface2)}
+  .ha-red{border-left:3px solid #f87171}.ha-orange{border-left:3px solid #fb923c}.ha-green{border-left:3px solid #4ade80}.ha-blue{border-left:3px solid #60a5fa}
+  .ha-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .ha-red .ha-dot{background:#f87171}.ha-orange .ha-dot{background:#fb923c}.ha-green .ha-dot{background:#4ade80}.ha-blue .ha-dot{background:#60a5fa}
+  .ha-title{font-size:12px;font-weight:600;color:var(--text)}
+  .ha-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+  /* ═══════════════════════════════════════════
+     HELP — USER MANUAL
+     ═══════════════════════════════════════════ */
+  .help-wrap{display:flex;gap:0;height:calc(100vh - var(--header-h) - var(--tab-h));overflow:hidden}
+  .help-toc{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+  .help-toc-title{font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;padding:6px 10px 10px;border-bottom:1px solid var(--border);margin-bottom:6px}
+  .help-toc-link{display:block;padding:7px 10px;border-radius:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;cursor:pointer;transition:all .15s}
+  .help-toc-link:hover{background:var(--surface2);color:var(--text)}
+  .help-toc-link.indent{padding-left:22px;font-size:11px;color:var(--text3)}
+  .help-toc-link.indent:hover{color:var(--text2)}
+  .help-nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;margin-bottom:2px}
+  .help-nav-item:hover{background:var(--surface2);color:var(--text)}
+  .help-nav-item.active{background:rgba(240,136,62,.12);color:var(--accent);border-left:3px solid var(--accent)}
+  .help-nav-icon{font-size:15px;width:18px;text-align:center}
+  .help-toc-sub-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;padding:12px 10px 6px;margin-top:4px;border-top:1px solid var(--border)}
+
+  .help-body{flex:1;overflow-y:auto;padding:28px 36px;max-width:900px}
+
+  /* Cover */
+  .help-cover{display:flex;align-items:center;gap:20px;background:linear-gradient(135deg,var(--surface) 0%,rgba(30,74,120,.3) 100%);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:28px}
+  .help-cover-icon{font-size:52px;line-height:1}
+  .help-cover-title{font-size:22px;font-weight:800;color:var(--text);letter-spacing:.3px}
+  .help-cover-sub{font-size:13px;color:var(--text3);margin-top:4px}
+
+  /* Sections */
+  .hm-section{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+  .hm-section:last-child{border-bottom:none}
+  .hm-h1{font-size:18px;font-weight:800;color:var(--accent);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid rgba(240,136,62,.3)}
+  .hm-h2{font-size:14px;font-weight:700;color:var(--accent2);margin:16px 0 8px}
+  .hm-p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:8px}
+  .hm-ul,.hm-ol{padding-left:22px;margin:6px 0 10px}
+  .hm-ul li,.hm-ol li{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:4px}
+  .hm-kv{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid rgba(48,54,61,.5);font-size:13px}
+  .hm-kv-key{font-weight:700;color:var(--text);min-width:110px}
+  .hm-kv-val{color:var(--text2)}
+
+  /* Tables */
+  .hm-table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 12px}
+  .hm-table th{padding:8px 12px;text-align:left;background:var(--surface2);color:var(--text2);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--border)}
+  .hm-table td{padding:8px 12px;border:1px solid var(--border);color:var(--text2);vertical-align:top}
+  .hm-table tr:nth-child(even) td{background:rgba(33,38,45,.4)}
+  .hm-table td code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;font-size:11px;color:var(--accent5);font-family:monospace}
+
+  /* Note box */
+  .hm-note{background:rgba(88,166,255,.07);border-left:3px solid var(--accent2);border-radius:0 6px 6px 0;padding:10px 14px;font-size:12px;color:var(--text2);margin:10px 0;line-height:1.6}
+
+  /* Badges */
+  .hm-badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase}
+  .hm-b-green{background:rgba(63,185,80,.15);color:#4ade80}
+  .hm-b-orange{background:rgba(240,136,62,.15);color:#fb923c}
+  .hm-b-red{background:rgba(248,113,113,.15);color:#f87171}
+  .hm-b-blue{background:rgba(88,166,255,.15);color:#60a5fa}
+
+  /* Contact Us */
+  .help-contact-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:16px}
+  .help-contact-icon{font-size:64px;line-height:1}
+  .help-contact-title{font-size:26px;font-weight:800;color:var(--text)}
+  .help-contact-sub{font-size:14px;color:var(--text3);line-height:1.7}
+  .help-contact-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 40px;margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .help-contact-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+  .help-contact-email{font-size:20px;font-weight:700;color:var(--accent2);text-decoration:none;letter-spacing:.3px}
+  .help-contact-email:hover{text-decoration:underline}
+  .help-contact-hint{font-size:11px;color:var(--text3);margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="icon">🏭</span>
+      <h1>Warehouse Management System</h1>
+      <p>Sign in to your account</p>
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">🔐 Sign In</button>
+    <p class="login-error" id="login-error"></p>
+
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div class="header-logo">
+      <span class="icon">🏭</span>
+      Warehouse Management System
+    </div>
+    <div class="header-spacer"></div>
+    <span class="header-time" id="clock"></span>
+    <div class="header-user">
+      <div class="user-avatar" id="user-avatar">A</div>
+      <div>
+        <div style="font-weight:600;color:var(--text)" id="user-name">Admin</div>
+        <div style="font-size:11px;color:var(--text3)" id="user-role">Administrator</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">⏻ Logout</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div id="tabs">
+    <button class="tab-btn active" onclick="switchTab('home')" id="tab-home">🏠 Home</button>
+    <button class="tab-btn" onclick="switchTab('master')" id="tab-master">📦 Master Data</button>
+    <button class="tab-btn" onclick="switchTab('inbound')" id="tab-inbound">📥 Inbound</button>
+    <button class="tab-btn" onclick="switchTab('outbound')" id="tab-outbound">📤 Outbound</button>
+    <button class="tab-btn" onclick="switchTab('reports')" id="tab-reports">📊 Reports</button>
+    <button class="tab-btn" onclick="switchTab('utilities')" id="tab-utilities">🔧 Utilities</button>
+    <button class="tab-btn" onclick="switchTab('help')" id="tab-help">❓ Help</button>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- ═══ HOME TAB ═══ -->
+    <div class="tab-panel active" id="panel-home">
+      <div class="main-panel" id="home-content"></div>
+    </div>
+
+    <!-- ═══ MASTER DATA TAB ═══ -->
+    <div class="tab-panel" id="panel-master">
+      <div class="sidebar">
+        <div class="sidebar-section">Master Data</div>
+        <div class="sidebar-item active" onclick="showMasterScreen('items')" id="si-items">
+          <span class="si-icon">📦</span> Items
+        </div>
+        <div class="sidebar-item" onclick="showMasterScreen('locations')" id="si-locations">
+          <span class="si-icon">📍</span> Locations
+        </div>
+        <div class="sidebar-item" onclick="showMasterScreen('suppliers')" id="si-suppliers">
+          <span class="si-icon">🏢</span> Suppliers
+        </div>
+        <div class="sidebar-item" onclick="showMasterScreen('units_of_measure')" id="si-units_of_measure">
+          <span class="si-icon">📏</span> Units of Measure
+        </div>
+        <div class="sidebar-item" onclick="showMasterScreen('users')" id="si-users">
+          <span class="si-icon">👤</span> Users
+        </div>
+      </div>
+      <div class="main-panel" id="master-content"></div>
+    </div>
+
+    <!-- ═══ INBOUND TAB ═══ -->
+    <div class="tab-panel" id="panel-inbound">
+      <div class="main-panel" id="inbound-content"></div>
+    </div>
+
+    <!-- ═══ OUTBOUND TAB ═══ -->
+    <div class="tab-panel" id="panel-outbound">
+      <div class="main-panel" id="outbound-content"></div>
+    </div>
+
+    <!-- ═══ REPORTS TAB ═══ -->
+    <div class="tab-panel" id="panel-reports">
+      <div class="main-panel" id="reports-content"></div>
+    </div>
+
+    <!-- ═══ UTILITIES TAB ═══ -->
+    <div class="tab-panel" id="panel-utilities">
+      <div class="main-panel" id="utilities-content"></div>
+    </div>
+
+    <!-- ═══ HELP TAB ═══ -->
+    <div class="tab-panel" id="panel-help">
+      <div class="main-panel" id="help-content"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Modal</div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CORE STATE & AUTH
+// ═══════════════════════════════════════════════════════════
+const API = 'http://localhost:5000';
+let currentUser = null;
+let activeTab = 'home';
+let activeMasterScreen = 'items';
+let chartInstances = {};
+
+// Clock
+setInterval(() => {
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleString();
+}, 1000);
+
+async function api(method, path, body) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if(body !== undefined) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(API + '/api' + path, opts);
+    if(!res.ok){ let m='Server error '+res.status; try{const j=await res.json();m=j.message||m;}catch(e){} throw new Error(m); }
+    return res.json();
+  } catch(e) { throw e; }
+}
+
+async function doLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  const res = await api('POST', '/login', {username:u, password:p});
+  if(res.success) {
+    currentUser = res.data;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('user-name').textContent = currentUser.full_name || currentUser.username;
+    document.getElementById('user-role').textContent = currentUser.role;
+    document.getElementById('user-avatar').textContent = (currentUser.full_name || currentUser.username)[0].toUpperCase();
+    switchTab('home');
+  } else {
+    document.getElementById('login-error').textContent = res.message;
+  }
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-error').textContent = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab === 'home') renderHome();
+  if(tab === 'inbound') renderInboundList();
+  if(tab === 'outbound') renderOutboundList();
+  if(tab === 'reports') renderReports('dashboard');
+  if(tab === 'utilities') renderUtilities();
+  if(tab === 'help') renderHelp();
+}
+
+function showMasterScreen(screen) {
+  activeMasterScreen = screen;
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  const si = document.getElementById('si-'+screen);
+  if(si) si.classList.add('active');
+  const renders = {
+    items: renderItems, locations: renderLocations,
+    suppliers: renderSuppliers, units_of_measure: renderUoMs, users: renderUsers
+  };
+  if(renders[screen]) renders[screen]();
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST & MODAL
+// ═══════════════════════════════════════════════════════════
+function toast(msg, type='info') {
+  const t = document.getElementById('toast');
+  const icons = {success:'✅', error:'❌', info:'ℹ️'};
+  t.innerHTML = `${icons[type]||'•'} ${msg}`;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+function openModal(title, body, footer, large=false) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-footer').innerHTML = footer;
+  const m = document.getElementById('modal');
+  m.className = large ? 'modal modal-lg' : 'modal';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e) {
+  if(e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function badge(val, map) {
+  const [cls, label] = map[val] || ['badge-gray', val];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+function activeBadge(v) { return v ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Inactive</span>'; }
+
+// ═══════════════════════════════════════════════════════════
+// HOME DASHBOARD
+// ═══════════════════════════════════════════════════════════
+let homeChartInstance = null;
+
+async function renderHome() {
+  const el = document.getElementById('home-content');
+  el.innerHTML = `<div class="home-loading"><span class="home-spinner"></span> Loading dashboard…</div>`;
+  let d;
+  try {
+    const r = await api('GET', '/home');
+    d = r.data;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load dashboard: ${e.message}</p></div>`; return; }
+
+  const kpi = d.kpi || {};
+  const inv = d.inventory_status || [];
+  const rib = d.recent_inbound  || [];
+  const rob = d.recent_outbound || [];
+  const low = d.low_stock_items || [];
+  const mov = d.stock_movement  || [];
+
+  // Build chart data — aggregate by day for last 7 days
+  const days = [];
+  for(let i=6;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dt.toISOString().slice(0,10));}
+  const movMap = {};
+  mov.forEach(m => {
+    if(!movMap[m.day]) movMap[m.day]={in:0,out:0};
+    movMap[m.day].in  += (m.qty_in||0);
+    movMap[m.day].out += (m.qty_out||0);
+  });
+  const chartIn  = days.map(d=>movMap[d]?.in||0);
+  const chartOut = days.map(d=>movMap[d]?.out||0);
+  const chartLabels = days.map(d=>{ const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en',{month:'short',day:'numeric'}); });
+
+  const statusBadge = s => ({
+    'IN_STOCK':    '<span class="hbadge hb-green">In Stock</span>',
+    'LOW_STOCK':   '<span class="hbadge hb-orange">Low Stock</span>',
+    'OUT_OF_STOCK':'<span class="hbadge hb-red">Out of Stock</span>',
+    'completed':   '<span class="hbadge hb-green">Completed</span>',
+    'in_progress': '<span class="hbadge hb-blue">In Progress</span>',
+    'pending':     '<span class="hbadge hb-orange">Pending</span>',
+    'cancelled':   '<span class="hbadge hb-red">Cancelled</span>',
+  }[s] || `<span class="hbadge hb-gray">${s||'—'}</span>`);
+
+  el.innerHTML = `
+  <div class="home-wrap">
+
+    <!-- ── IMAGE CAROUSEL ── -->
+    <div class="home-carousel" id="home-carousel">
+      <div class="home-carousel-track" id="home-carousel-track">
+        <div class="home-carousel-slide">
+          <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=1400&q=80" alt="Warehouse Inventory Management">
+          <div class="home-carousel-overlay"><div class="home-carousel-caption"><h3>📦 Inventory Management</h3><p>Real-time tracking of all stock levels across every location</p></div></div>
+        </div>
+        <div class="home-carousel-slide">
+          <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1400&q=80" alt="Warehouse Storage Racks">
+          <div class="home-carousel-overlay"><div class="home-carousel-caption"><h3>🏭 Organised Storage</h3><p>Structured shelving and location management for fast retrieval</p></div></div>
+        </div>
+        <div class="home-carousel-slide">
+          <img src="https://images.unsplash.com/photo-1601598851547-4302969d0614?w=1400&q=80" alt="Inbound Receiving">
+          <div class="home-carousel-overlay"><div class="home-carousel-caption"><h3>📥 Inbound Receiving</h3><p>Accurate goods receipt and supplier order management</p></div></div>
+        </div>
+        <div class="home-carousel-slide">
+          <img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=1400&q=80" alt="Outbound Dispatch">
+          <div class="home-carousel-overlay"><div class="home-carousel-caption"><h3>🚚 Outbound Dispatch</h3><p>Streamlined picking, packing and shipment operations</p></div></div>
+        </div>
+        <div class="home-carousel-slide">
+          <img src="https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=1400&q=80" alt="Supply Chain Operations">
+          <div class="home-carousel-overlay"><div class="home-carousel-caption"><h3>🔗 Supply Chain Control</h3><p>End-to-end warehouse process visibility and reporting</p></div></div>
+        </div>
+      </div>
+      <button class="home-carousel-btn home-carousel-prev" onclick="homeCarouselMove(-1)">&#8249;</button>
+      <button class="home-carousel-btn home-carousel-next" onclick="homeCarouselMove(1)">&#8250;</button>
+      <div class="home-carousel-dots" id="home-carousel-dots">
+        <button class="home-carousel-dot active" onclick="homeCarouselGoto(0)"></button>
+        <button class="home-carousel-dot" onclick="homeCarouselGoto(1)"></button>
+        <button class="home-carousel-dot" onclick="homeCarouselGoto(2)"></button>
+        <button class="home-carousel-dot" onclick="homeCarouselGoto(3)"></button>
+        <button class="home-carousel-dot" onclick="homeCarouselGoto(4)"></button>
+      </div>
+    </div>
+    <div class="home-kpi-strip">
+      <div class="home-kpi hkpi-blue" onclick="switchTab('master')">
+        <div class="hkpi-icon">📦</div>
+        <div class="hkpi-body">
+          <div class="hkpi-value">${(kpi.total_inventory||0).toLocaleString()}</div>
+          <div class="hkpi-label">Total Inventory</div>
+          <div class="hkpi-sub">Units on hand</div>
+        </div>
+      </div>
+      <div class="home-kpi hkpi-green" onclick="switchTab('inbound')">
+        <div class="hkpi-icon">📥</div>
+        <div class="hkpi-body">
+          <div class="hkpi-value">${(kpi.inbound_pending||0)+(kpi.inbound_inprog||0)}</div>
+          <div class="hkpi-label">Pending Inbound</div>
+          <div class="hkpi-sub">${kpi.inbound_inprog||0} in progress</div>
+        </div>
+      </div>
+      <div class="home-kpi hkpi-orange" onclick="switchTab('outbound')">
+        <div class="hkpi-icon">📤</div>
+        <div class="hkpi-body">
+          <div class="hkpi-value">${(kpi.outbound_pending||0)+(kpi.outbound_inprog||0)}</div>
+          <div class="hkpi-label">Orders in Process</div>
+          <div class="hkpi-sub">${kpi.outbound_inprog||0} in progress</div>
+        </div>
+      </div>
+      <div class="home-kpi hkpi-red" onclick="switchTab('reports')">
+        <div class="hkpi-icon">⚠️</div>
+        <div class="hkpi-body">
+          <div class="hkpi-value">${(kpi.low_stock||0)+(kpi.out_of_stock||0)}</div>
+          <div class="hkpi-label">Stock Alerts</div>
+          <div class="hkpi-sub">${kpi.out_of_stock||0} out of stock</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 2: Inventory Status + Recent Orders ── -->
+    <div class="home-row">
+
+      <!-- Inventory Status Table -->
+      <div class="home-card home-card-lg">
+        <div class="home-card-hd">
+          <span class="home-card-title">📋 Inventory Status</span>
+          <button class="home-link-btn" onclick="switchTab('reports');setTimeout(()=>renderReports('inv_snapshot'),100)">View Full Report →</button>
+        </div>
+        <div class="home-table-wrap">
+          <table class="home-table">
+            <thead><tr><th>Item</th><th>SKU</th><th>Quantity</th><th>Location</th><th>Status</th></tr></thead>
+            <tbody>
+            ${inv.length ? inv.map(r=>`<tr>
+              <td>${r.name||'—'}</td>
+              <td><code class="home-sku">${r.sku}</code></td>
+              <td><strong>${(r.qty||0).toLocaleString()}</strong></td>
+              <td><span class="home-loc">${r.location_code||'—'}</span></td>
+              <td>${statusBadge(r.stock_status)}</td>
+            </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No inventory data yet</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Orders -->
+      <div class="home-card home-card-sm">
+        <div class="home-card-hd">
+          <span class="home-card-title">🔄 Recent Inbound</span>
+          <button class="home-link-btn" onclick="switchTab('inbound')">View All →</button>
+        </div>
+        <div class="home-table-wrap">
+          <table class="home-table">
+            <thead><tr><th>Reference</th><th>Status</th></tr></thead>
+            <tbody>
+            ${rib.length ? rib.map(r=>`<tr>
+              <td><span class="home-ref">${r.reference_no}</span><br><span style="font-size:10px;color:var(--text3)">${r.supplier_name||'—'}</span></td>
+              <td>${statusBadge(r.status)}</td>
+            </tr>`).join('') : '<tr><td colspan="2" style="text-align:center;color:var(--text3);padding:20px">No records</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+        <div class="home-card-hd" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+          <span class="home-card-title">🚚 Recent Outbound</span>
+          <button class="home-link-btn" onclick="switchTab('outbound')">View All →</button>
+        </div>
+        <div class="home-table-wrap">
+          <table class="home-table">
+            <thead><tr><th>Reference</th><th>Status</th></tr></thead>
+            <tbody>
+            ${rob.length ? rob.map(r=>`<tr>
+              <td><span class="home-ref">${r.reference_no}</span><br><span style="font-size:10px;color:var(--text3)">${r.destination||'—'}</span></td>
+              <td>${statusBadge(r.status)}</td>
+            </tr>`).join('') : '<tr><td colspan="2" style="text-align:center;color:var(--text3);padding:20px">No records</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 3: Stock Movement Chart + Low Stock Alerts ── -->
+    <div class="home-row">
+
+      <!-- Stock Movement Chart -->
+      <div class="home-card home-card-lg">
+        <div class="home-card-hd">
+          <span class="home-card-title">📈 Weekly Stock Movement</span>
+          <span style="font-size:11px;color:var(--text3)">Last 7 days</span>
+        </div>
+        <div style="position:relative;height:220px;padding:8px 0">
+          <canvas id="home-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Low Stock Alerts -->
+      <div class="home-card home-card-sm">
+        <div class="home-card-hd">
+          <span class="home-card-title">🔔 Alerts &amp; Notifications</span>
+        </div>
+        <div class="home-alerts">
+          ${low.length ? low.map(a=>`
+          <div class="home-alert-item ${a.alert_type==='OUT_OF_STOCK'?'ha-red':'ha-orange'}">
+            <span class="ha-dot"></span>
+            <div class="ha-body">
+              <div class="ha-title">${a.alert_type==='OUT_OF_STOCK'?'Out of Stock':'Low Stock'}: <strong>${a.name}</strong></div>
+              <div class="ha-sub">SKU: ${a.sku} &nbsp;·&nbsp; Qty: ${a.qty||0} &nbsp;·&nbsp; Reorder at: ${a.reorder_point}</div>
+            </div>
+          </div>`).join('') : `
+          <div class="home-alert-item ha-green">
+            <span class="ha-dot"></span>
+            <div class="ha-body"><div class="ha-title">All stock levels healthy</div><div class="ha-sub">No alerts at this time</div></div>
+          </div>`}
+          <div class="home-alert-item ha-blue" style="margin-top:8px">
+            <span class="ha-dot"></span>
+            <div class="ha-body">
+              <div class="ha-title">System: My Warehouse Management</div>
+              <div class="ha-sub">Last refreshed: ${new Date().toLocaleTimeString()}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+
+  // Draw chart
+  if(homeChartInstance) { homeChartInstance.destroy(); homeChartInstance=null; }
+  const ctx = document.getElementById('home-chart');
+  if(ctx) {
+    homeChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: chartLabels,
+        datasets: [
+          { label:'Received', data:chartIn,  borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.12)',  fill:true, tension:.4, pointRadius:4, pointBackgroundColor:'#3fb950' },
+          { label:'Dispatched', data:chartOut, borderColor:'#f0883e', backgroundColor:'rgba(240,136,62,.12)', fill:true, tension:.4, pointRadius:4, pointBackgroundColor:'#f0883e' }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:'#8b949e', font:{size:11} } } },
+        scales:{
+          x:{ ticks:{color:'#6e7681',font:{size:11}}, grid:{color:'rgba(48,54,61,.5)'} },
+          y:{ ticks:{color:'#6e7681',font:{size:11}}, grid:{color:'rgba(48,54,61,.5)'}, beginAtZero:true }
+        }
+      }
+    });
+  }
+
+  // Start auto-play after render
+  homeCarouselStart();
+}
+
+// ── Carousel Logic ────────────────────────────────────────
+let _carouselIdx = 0, _carouselTimer = null, _carouselTotal = 5;
+
+function homeCarouselMove(dir) {
+  homeCarouselGoto((_carouselIdx + dir + _carouselTotal) % _carouselTotal);
+  homeCarouselStart(); // reset timer on manual nav
+}
+
+function homeCarouselGoto(idx) {
+  _carouselIdx = idx;
+  const track = document.getElementById('home-carousel-track');
+  if(track) track.style.transform = `translateX(-${idx * 100}%)`;
+  document.querySelectorAll('.home-carousel-dot').forEach((d,i) => {
+    d.classList.toggle('active', i === idx);
+  });
+}
+
+function homeCarouselStart() {
+  if(_carouselTimer) clearInterval(_carouselTimer);
+  _carouselTimer = setInterval(() => {
+    homeCarouselGoto((_carouselIdx + 1) % _carouselTotal);
+  }, 4000);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+let itemsData=[], uomsData=[], suppliersData=[];
+
+async function renderItems(search='') {
+  const [items, uoms, sups] = await Promise.all([
+    api('GET', '/items'+(search?`?search=${encodeURIComponent(search)}`:'') ),
+    api('GET', '/units_of_measure'), api('GET', '/suppliers')
+  ]);
+  itemsData = items.data || [];
+  uomsData = uoms.data || [];
+  suppliersData = sups.data || [];
+  const uomMap = Object.fromEntries(uomsData.map(u=>[u.id, u.code]));
+  const supMap = Object.fromEntries(suppliersData.map(s=>[s.id, s.name]));
+
+  document.getElementById('master-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Items Master <span>${itemsData.length} records</span></div>
+      <button class="btn btn-primary" onclick="openItemForm()">+ Add Item</button>
+    </div>
+    <div class="toolbar">
+      <div class="search-box"><span>🔍</span><input placeholder="Search SKU, name, category..." oninput="renderItems(this.value)"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>SKU</th><th>Name</th><th>Category</th><th>UoM</th><th>Supplier</th>
+            <th>Unit Cost</th><th>Reorder Pt</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+          ${itemsData.length ? itemsData.map(i=>`<tr>
+            <td><strong>${i.sku}</strong></td>
+            <td>${i.name}</td>
+            <td>${i.category||'—'}</td>
+            <td>${uomMap[i.uom_id]||'—'}</td>
+            <td>${supMap[i.supplier_id]||'—'}</td>
+            <td>$${(i.unit_cost||0).toFixed(2)}</td>
+            <td>${i.reorder_point||0}</td>
+            <td>${activeBadge(i.active)}</td>
+            <td>
+              <div class="gap">
+                <button class="btn btn-secondary btn-sm" onclick="openItemForm(${i.id})">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteRecord('items',${i.id},'${i.name}')">🗑</button>
+              </div>
+            </td>
+          </tr>`).join('') : '<tr><td colspan="9"><div class="empty-state"><div class="icon">📦</div><p>No items found</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openItemForm(id=null) {
+  if(!uomsData.length) uomsData = (await api('GET','/units_of_measure')).data||[];
+  if(!suppliersData.length) suppliersData = (await api('GET','/suppliers')).data||[];
+  let item = {};
+  if(id) { const r = await api('GET',`/items/${id}`); item = r.data||{}; }
+  const uomOpts = uomsData.map(u=>`<option value="${u.id}" ${item.uom_id==u.id?'selected':''}>${u.code} – ${u.name}</option>`).join('');
+  const supOpts = `<option value="">-- None --</option>` + suppliersData.map(s=>`<option value="${s.id}" ${item.supplier_id==s.id?'selected':''}>${s.code} – ${s.name}</option>`).join('');
+  openModal(id?'Edit Item':'New Item', `
+    <div class="form-row">
+      <div class="form-group"><label>SKU *</label><input id="f-sku" value="${item.sku||''}"></div>
+      <div class="form-group"><label>Name *</label><input id="f-name" value="${item.name||''}"></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc">${item.description||''}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label><input id="f-cat" value="${item.category||''}"></div>
+      <div class="form-group"><label>Unit of Measure</label><select id="f-uom">${uomOpts}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Supplier</label><select id="f-sup">${supOpts}</select></div>
+      <div class="form-group"><label>Unit Cost</label><input type="number" id="f-cost" value="${item.unit_cost||0}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Reorder Point</label><input type="number" id="f-rop" value="${item.reorder_point||0}"></div>
+      <div class="form-group"><label>Reorder Qty</label><input type="number" id="f-roq" value="${item.reorder_qty||0}"></div>
+    </div>
+    <div class="form-group"><label>Status</label><select id="f-active"><option value="1" ${item.active!=0?'selected':''}>Active</option><option value="0" ${item.active==0?'selected':''}>Inactive</option></select></div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem(${id||'null'})">💾 Save</button>`);
+}
+
+async function saveItem(id) {
+  const body = {
+    sku: document.getElementById('f-sku').value,
+    name: document.getElementById('f-name').value,
+    description: document.getElementById('f-desc').value,
+    category: document.getElementById('f-cat').value,
+    uom_id: document.getElementById('f-uom').value||null,
+    supplier_id: document.getElementById('f-sup').value||null,
+    unit_cost: parseFloat(document.getElementById('f-cost').value)||0,
+    reorder_point: parseFloat(document.getElementById('f-rop').value)||0,
+    reorder_qty: parseFloat(document.getElementById('f-roq').value)||0,
+    active: parseInt(document.getElementById('f-active').value)
+  };
+  const res = id ? await api('PUT',`/items/${id}`,body) : await api('POST','/items',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderItems(); }
+  else toast(res.message,'error');
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOCATIONS
+// ═══════════════════════════════════════════════════════════
+let locationsData = [];
+async function renderLocations(search='') {
+  const r = await api('GET','/locations'+(search?`?search=${encodeURIComponent(search)}`:''));
+  locationsData = r.data||[];
+  document.getElementById('master-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Locations <span>${locationsData.length} records</span></div>
+      <button class="btn btn-primary" onclick="openLocForm()">+ Add Location</button>
+    </div>
+    <div class="toolbar">
+      <div class="search-box"><span>🔍</span><input placeholder="Search code, name, zone..." oninput="renderLocations(this.value)"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Name</th><th>Zone</th><th>Aisle</th><th>Rack</th><th>Bin</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+          ${locationsData.length ? locationsData.map(l=>`<tr>
+            <td><strong>${l.code}</strong></td><td>${l.name}</td>
+            <td>${l.zone||'—'}</td><td>${l.aisle||'—'}</td><td>${l.rack||'—'}</td><td>${l.bin||'—'}</td>
+            <td>${l.capacity||0}</td><td>${activeBadge(l.active)}</td>
+            <td><div class="gap">
+              <button class="btn btn-secondary btn-sm" onclick="openLocForm(${l.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteRecord('locations',${l.id},'${l.code}')">🗑</button>
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="9"><div class="empty-state"><div class="icon">📍</div><p>No locations found</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openLocForm(id=null) {
+  let loc = {};
+  if(id) { const r = await api('GET',`/locations/${id}`); loc = r.data||{}; }
+  openModal(id?'Edit Location':'New Location', `
+    <div class="form-row">
+      <div class="form-group"><label>Code *</label><input id="f-code" value="${loc.code||''}"></div>
+      <div class="form-group"><label>Name *</label><input id="f-name" value="${loc.name||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Zone</label><input id="f-zone" value="${loc.zone||''}"></div>
+      <div class="form-group"><label>Aisle</label><input id="f-aisle" value="${loc.aisle||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Rack</label><input id="f-rack" value="${loc.rack||''}"></div>
+      <div class="form-group"><label>Bin</label><input id="f-bin" value="${loc.bin||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Location Type</label>
+        <select id="f-loctype">
+          <option value="Bulk" ${loc.loc_type=='Bulk'?'selected':''}>Bulk</option>
+          <option value="Rack" ${loc.loc_type=='Rack'?'selected':''}>Rack</option>
+          <option value="Bin" ${loc.loc_type=='Bin'?'selected':''}>Bin</option>
+          <option value="Cold" ${loc.loc_type=='Cold'?'selected':''}>Cold</option>
+          <option value="Staging" ${loc.loc_type=='Staging'?'selected':''}>Staging</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Capacity</label><input type="number" id="f-cap" value="${loc.capacity||0}"></div>
+    </div>
+    <div class="form-group"><label>Status</label><select id="f-active"><option value="1" ${loc.active!=0?'selected':''}>Active</option><option value="0" ${loc.active==0?'selected':''}>Inactive</option></select></div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLoc(${id||'null'})">💾 Save</button>`);
+}
+
+async function saveLoc(id) {
+  const body = {
+    code: document.getElementById('f-code').value,
+    name: document.getElementById('f-name').value,
+    zone: document.getElementById('f-zone').value,
+    aisle: document.getElementById('f-aisle').value,
+    rack: document.getElementById('f-rack').value,
+    bin: document.getElementById('f-bin').value,
+    loc_type: document.getElementById('f-loctype').value,
+    capacity: parseFloat(document.getElementById('f-cap').value)||0,
+    active: parseInt(document.getElementById('f-active').value)
+  };
+  const res = id ? await api('PUT',`/locations/${id}`,body) : await api('POST','/locations',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderLocations(); }
+  else toast(res.message,'error');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUPPLIERS
+// ═══════════════════════════════════════════════════════════
+async function renderSuppliers(search='') {
+  const r = await api('GET','/suppliers'+(search?`?search=${encodeURIComponent(search)}`:''));
+  const data = r.data||[];
+  document.getElementById('master-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Suppliers <span>${data.length} records</span></div>
+      <button class="btn btn-primary" onclick="openSupForm()">+ Add Supplier</button>
+    </div>
+    <div class="toolbar">
+      <div class="search-box"><span>🔍</span><input placeholder="Search code, name, email..." oninput="renderSuppliers(this.value)"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+          ${data.length ? data.map(s=>`<tr>
+            <td><strong>${s.code}</strong></td><td>${s.name}</td>
+            <td>${s.contact_person||'—'}</td><td>${s.phone||'—'}</td>
+            <td>${s.email||'—'}</td><td>${s.address||'—'}</td>
+            <td>${activeBadge(s.active)}</td>
+            <td><div class="gap">
+              <button class="btn btn-secondary btn-sm" onclick="openSupForm(${s.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteRecord('suppliers',${s.id},'${s.name}')">🗑</button>
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="8"><div class="empty-state"><div class="icon">🏢</div><p>No suppliers found</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openSupForm(id=null) {
+  let s = {};
+  if(id) { const r = await api('GET',`/suppliers/${id}`); s = r.data||{}; }
+  openModal(id?'Edit Supplier':'New Supplier', `
+    <div class="form-row">
+      <div class="form-group"><label>Code *</label><input id="f-code" value="${s.code||''}"></div>
+      <div class="form-group"><label>Name *</label><input id="f-name" value="${s.name||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Person</label><input id="f-cp" value="${s.contact_person||''}"></div>
+      <div class="form-group"><label>Phone</label><input id="f-phone" value="${s.phone||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Email</label><input id="f-email" value="${s.email||''}"></div>
+      <div class="form-group"><label>Status</label><select id="f-active"><option value="1" ${s.active!=0?'selected':''}>Active</option><option value="0" ${s.active==0?'selected':''}>Inactive</option></select></div>
+    </div>
+    <div class="form-group"><label>Address</label><textarea id="f-addr">${s.address||''}</textarea></div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSup(${id||'null'})">💾 Save</button>`);
+}
+
+async function saveSup(id) {
+  const body = {
+    code: document.getElementById('f-code').value,
+    name: document.getElementById('f-name').value,
+    contact_person: document.getElementById('f-cp').value,
+    phone: document.getElementById('f-phone').value,
+    email: document.getElementById('f-email').value,
+    address: document.getElementById('f-addr').value,
+    active: parseInt(document.getElementById('f-active').value)
+  };
+  const res = id ? await api('PUT',`/suppliers/${id}`,body) : await api('POST','/suppliers',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderSuppliers(); }
+  else toast(res.message,'error');
+}
+
+// ═══════════════════════════════════════════════════════════
+// UNITS OF MEASURE
+// ═══════════════════════════════════════════════════════════
+async function renderUoMs(search='') {
+  const r = await api('GET','/units_of_measure'+(search?`?search=${encodeURIComponent(search)}`:''));
+  const data = r.data||[];
+  document.getElementById('master-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Units of Measure <span>${data.length} records</span></div>
+      <button class="btn btn-primary" onclick="openUoMForm()">+ Add UoM</button>
+    </div>
+    <div class="toolbar">
+      <div class="search-box"><span>🔍</span><input placeholder="Search code, name..." oninput="renderUoMs(this.value)"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Name</th><th>Description</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody>
+          ${data.length ? data.map(u=>`<tr>
+            <td><strong>${u.code}</strong></td><td>${u.name}</td>
+            <td>${u.description||'—'}</td>
+            <td>${u.created_at?u.created_at.split('T')[0]:''}</td>
+            <td><div class="gap">
+              <button class="btn btn-secondary btn-sm" onclick="openUoMForm(${u.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteRecord('units_of_measure',${u.id},'${u.code}')">🗑</button>
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="5"><div class="empty-state"><div class="icon">📏</div><p>No units found</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openUoMForm(id=null) {
+  let u = {};
+  if(id) { const r = await api('GET',`/units_of_measure/${id}`); u = r.data||{}; }
+  openModal(id?'Edit Unit of Measure':'New Unit of Measure', `
+    <div class="form-row">
+      <div class="form-group"><label>Code *</label><input id="f-code" value="${u.code||''}"></div>
+      <div class="form-group"><label>Name *</label><input id="f-name" value="${u.name||''}"></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc">${u.description||''}</textarea></div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUoM(${id||'null'})">💾 Save</button>`);
+}
+
+async function saveUoM(id) {
+  const body = {
+    code: document.getElementById('f-code').value,
+    name: document.getElementById('f-name').value,
+    description: document.getElementById('f-desc').value
+  };
+  const res = id ? await api('PUT',`/units_of_measure/${id}`,body) : await api('POST','/units_of_measure',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderUoMs(); }
+  else toast(res.message,'error');
+}
+
+// ═══════════════════════════════════════════════════════════
+// USERS
+// ═══════════════════════════════════════════════════════════
+async function renderUsers(search='') {
+  const r = await api('GET','/users'+(search?`?search=${encodeURIComponent(search)}`:''));
+  const data = r.data||[];
+  const roleMap = { admin:['badge-purple','Admin'], manager:['badge-blue','Manager'], operator:['badge-green','Operator'] };
+  document.getElementById('master-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Users <span>${data.length} records</span></div>
+      <button class="btn btn-primary" onclick="openUserForm()">+ Add User</button>
+    </div>
+    <div class="toolbar">
+      <div class="search-box"><span>🔍</span><input placeholder="Search username, name, email..." oninput="renderUsers(this.value)"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody>
+          ${data.length ? data.map(u=>`<tr>
+            <td><strong>${u.username}</strong></td><td>${u.full_name||'—'}</td>
+            <td>${u.email||'—'}</td>
+            <td>${badge(u.role, roleMap)}</td>
+            <td>${activeBadge(u.active)}</td>
+            <td>${u.created_at?u.created_at.split('T')[0]:''}</td>
+            <td><div class="gap">
+              <button class="btn btn-secondary btn-sm" onclick="openUserForm(${u.id})">✏️</button>
+              ${u.id!=(currentUser&&currentUser.id)?`<button class="btn btn-danger btn-sm" onclick="deleteRecord('users',${u.id},'${u.username}')">🗑</button>`:''}
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><div class="icon">👤</div><p>No users found</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openUserForm(id=null) {
+  let u = {};
+  if(id) { const r = await api('GET',`/users/${id}`); u = r.data||{}; }
+  openModal(id?'Edit User':'New User', `
+    <div class="form-row">
+      <div class="form-group"><label>Username *</label><input id="f-uname" value="${u.username||''}"></div>
+      <div class="form-group"><label>Full Name</label><input id="f-fname" value="${u.full_name||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Email</label><input id="f-email" value="${u.email||''}"></div>
+      <div class="form-group"><label>Role</label>
+        <select id="f-role">
+          <option value="operator" ${u.role=='operator'?'selected':''}>Operator</option>
+          <option value="manager" ${u.role=='manager'?'selected':''}>Manager</option>
+          <option value="admin" ${u.role=='admin'?'selected':''}>Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>${id?'New Password (leave blank to keep)':'Password *'}</label><div style="position:relative;display:flex;align-items:center"><input type="password" id="f-pass" placeholder="${id?'Leave blank to keep current':'Enter password'}" style="padding-right:36px;width:100%"><button type="button" onclick="const i=document.getElementById('f-pass');const b=this;if(i.type==='password'){i.type='text';b.textContent='🙈';}else{i.type='password';b.textContent='👁';}" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;font-size:15px;color:var(--text3);padding:0;line-height:1" title="Show/Hide password">👁</button></div></div>
+      <div class="form-group"><label>Status</label><select id="f-active"><option value="1" ${u.active!=0?'selected':''}>Active</option><option value="0" ${u.active==0?'selected':''}>Inactive</option></select></div>
+    </div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser(${id||'null'})">💾 Save</button>`);
+}
+
+async function saveUser(id) {
+  const pass = document.getElementById('f-pass').value;
+  const body = {
+    username: document.getElementById('f-uname').value,
+    full_name: document.getElementById('f-fname').value,
+    email: document.getElementById('f-email').value,
+    role: document.getElementById('f-role').value,
+    active: parseInt(document.getElementById('f-active').value)
+  };
+  if(pass) body.password = pass;
+  if(!id && !pass) { toast('Password is required for new users','error'); return; }
+  const res = id ? await api('PUT',`/users/${id}`,body) : await api('POST','/users',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderUsers(); }
+  else toast(res.message,'error');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DELETE GENERIC
+// ═══════════════════════════════════════════════════════════
+async function deleteRecord(table, id, name) {
+  if(!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  const res = await api('DELETE', `/${table}/${id}`);
+  if(res.success) { toast(res.message,'success'); showMasterScreen(activeMasterScreen); }
+  else toast(res.message,'error');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INBOUND
+// ═══════════════════════════════════════════════════════════
+let inboundData=[];
+async function renderInboundList() {
+  const r = await api('GET','/inbound');
+  inboundData = r.data||[];
+  const statusMap = { pending:['badge-orange','Pending'], in_progress:['badge-blue','In Progress'], completed:['badge-green','Completed'], cancelled:['badge-red','Cancelled'] };
+  document.getElementById('inbound-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Inbound Receipts <span>${inboundData.length} records</span></div>
+      <button class="btn btn-primary" onclick="openInboundForm()">+ New Receipt</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Reference</th><th>Supplier</th><th>Received Date</th><th>Status</th><th>Notes</th><th>Created By</th><th>Actions</th></tr></thead>
+          <tbody>
+          ${inboundData.length ? inboundData.map(i=>`<tr>
+            <td><strong>${i.reference_no}</strong></td>
+            <td>${i.supplier_name||'—'}</td>
+            <td>${i.received_date||'—'}</td>
+            <td>${badge(i.status,statusMap)}</td>
+            <td>${i.notes||'—'}</td>
+            <td>${i.created_by_name||'—'}</td>
+            <td><div class="gap">
+              <button class="btn btn-info btn-sm" onclick="viewInbound(${i.id})">👁</button>
+              <button class="btn btn-secondary btn-sm" onclick="openInboundForm(${i.id})">✏️</button>
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><div class="icon">📥</div><p>No inbound records</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openInboundForm(id=null) {
+  if(!suppliersData.length) suppliersData = (await api('GET','/suppliers')).data||[];
+  if(!itemsData.length) itemsData = (await api('GET','/items')).data||[];
+  if(!locationsData.length) locationsData = (await api('GET','/locations')).data||[];
+
+  let header={}, lines=[];
+  if(id) { const r=await api('GET',`/inbound/${id}`); header=r.data.header||{}; lines=r.data.lines||[]; }
+  if(!lines.length) lines=[{}];
+
+  const supOpts = `<option value="">-- Select Supplier --</option>` + suppliersData.map(s=>`<option value="${s.id}" ${header.supplier_id==s.id?'selected':''}>${s.code} – ${s.name}</option>`).join('');
+  const today = new Date().toISOString().split('T')[0];
+
+  const renderLines = (lns) => lns.map((l,i)=>`<tr id="ibl-${i}">
+    <td><select class="ibl-item" onchange="updateLineItemCost(${i},'inb')">
+      <option value="">--</option>
+      ${itemsData.map(it=>`<option value="${it.id}" data-cost="${it.unit_cost}" ${l.item_id==it.id?'selected':''}>${it.sku} – ${it.name}</option>`).join('')}
+    </select></td>
+    <td><select class="ibl-loc">
+      <option value="">--</option>
+      ${locationsData.map(lc=>`<option value="${lc.id}" ${l.location_id==lc.id?'selected':''}>${lc.code}</option>`).join('')}
+    </select></td>
+    <td><input type="number" class="ibl-exp" value="${l.qty_expected||0}" min="0"></td>
+    <td><input type="number" class="ibl-recv" value="${l.qty_received||0}" min="0"></td>
+    <td><input type="number" class="ibl-cost" value="${l.unit_cost||0}" step="0.01" min="0"></td>
+    <td><input class="ibl-notes" value="${l.notes||''}"></td>
+    <td><button class="btn btn-danger btn-sm" onclick="removeIBLine(${i})">✕</button></td>
+  </tr>`).join('');
+
+  openModal(id?'Edit Inbound Receipt':'New Inbound Receipt', `
+    <div class="form-row">
+      <div class="form-group"><label>Reference No</label><input id="f-ref" value="${header.reference_no||''}" placeholder="Auto-generated"></div>
+      <div class="form-group"><label>Supplier</label><select id="f-sup">${supOpts}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Received Date *</label><input type="date" id="f-date" value="${header.received_date||today}"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="f-status">
+          <option value="pending" ${header.status=='pending'?'selected':''}>Pending</option>
+          <option value="in_progress" ${header.status=='in_progress'?'selected':''}>In Progress</option>
+          <option value="completed" ${header.status=='completed'?'selected':''}>Completed</option>
+          <option value="cancelled" ${header.status=='cancelled'?'selected':''}>Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="f-notes">${header.notes||''}</textarea></div>
+    <hr class="divider">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="font-size:13px">Line Items</strong>
+      <button class="btn btn-secondary btn-sm add-line-btn" onclick="addIBLine()">+ Add Line</button>
+    </div>
+    <div class="table-wrap">
+      <table class="lines-table">
+        <thead><tr><th>Item</th><th>Location</th><th>Exp Qty</th><th>Recv Qty</th><th>Unit Cost</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="ib-lines">${renderLines(lines)}</tbody>
+      </table>
+    </div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInbound(${id||'null'})">💾 Save</button>`, true);
+}
+
+function addIBLine() {
+  const tbody = document.getElementById('ib-lines');
+  const rows = tbody.querySelectorAll('tr');
+  const i = rows.length;
+  const tr = document.createElement('tr');
+  tr.id = `ibl-${i}`;
+  const itemOpts = itemsData.map(it=>`<option value="${it.id}" data-cost="${it.unit_cost}">${it.sku} – ${it.name}</option>`).join('');
+  const locOpts = locationsData.map(lc=>`<option value="${lc.id}">${lc.code}</option>`).join('');
+  tr.innerHTML = `<td><select class="ibl-item"><option value="">--</option>${itemOpts}</select></td>
+    <td><select class="ibl-loc"><option value="">--</option>${locOpts}</select></td>
+    <td><input type="number" class="ibl-exp" value="0" min="0"></td>
+    <td><input type="number" class="ibl-recv" value="0" min="0"></td>
+    <td><input type="number" class="ibl-cost" value="0" step="0.01"></td>
+    <td><input class="ibl-notes" value=""></td>
+    <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeIBLine(i) { const r=document.getElementById(`ibl-${i}`); if(r) r.remove(); }
+
+function updateLineItemCost(rowIndex, type) {
+  if(type !== 'inb') return;
+  const tr = document.getElementById(`ibl-${rowIndex}`);
+  if(!tr) return;
+  const sel = tr.querySelector('.ibl-item');
+  const costInput = tr.querySelector('.ibl-cost');
+  if(!sel || !costInput) return;
+  const opt = sel.options[sel.selectedIndex];
+  const cost = opt ? (parseFloat(opt.dataset.cost) || 0) : 0;
+  costInput.value = cost.toFixed(2);
+}
+
+function collectIBLines() {
+  return Array.from(document.getElementById('ib-lines').querySelectorAll('tr')).map(tr=>({
+    item_id: tr.querySelector('.ibl-item')?.value||null,
+    location_id: tr.querySelector('.ibl-loc')?.value||null,
+    qty_expected: parseFloat(tr.querySelector('.ibl-exp')?.value)||0,
+    qty_received: parseFloat(tr.querySelector('.ibl-recv')?.value)||0,
+    unit_cost: parseFloat(tr.querySelector('.ibl-cost')?.value)||0,
+    notes: tr.querySelector('.ibl-notes')?.value||''
+  })).filter(l=>l.item_id);
+}
+
+async function saveInbound(id) {
+  const body = {
+    reference_no: document.getElementById('f-ref').value,
+    supplier_id: document.getElementById('f-sup').value||null,
+    received_date: document.getElementById('f-date').value,
+    status: document.getElementById('f-status').value,
+    notes: document.getElementById('f-notes').value,
+    created_by: currentUser?.id,
+    lines: collectIBLines()
+  };
+  const res = id ? await api('PUT',`/inbound/${id}`,body) : await api('POST','/inbound',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderInboundList(); }
+  else toast(res.message,'error');
+}
+
+async function viewInbound(id) {
+  const r = await api('GET',`/inbound/${id}`);
+  const h = r.data.header, lines = r.data.lines||[];
+  const statusMap = { pending:['badge-orange','Pending'], in_progress:['badge-blue','In Progress'], completed:['badge-green','Completed'], cancelled:['badge-red','Cancelled'] };
+  openModal(`Receipt: ${h.reference_no}`, `
+    <div class="detail-grid">
+      <div class="detail-item"><label>Reference</label><span>${h.reference_no}</span></div>
+      <div class="detail-item"><label>Supplier</label><span>${h.supplier_name||'—'}</span></div>
+      <div class="detail-item"><label>Date</label><span>${h.received_date}</span></div>
+      <div class="detail-item"><label>Status</label><span>${badge(h.status,statusMap)}</span></div>
+    </div>
+    ${h.notes?`<p style="color:var(--text2);font-size:13px;margin-bottom:16px">Notes: ${h.notes}</p>`:''}
+    <table class="lines-table" style="width:100%">
+      <thead><tr><th>SKU</th><th>Item</th><th>Location</th><th>Exp</th><th>Recv</th><th>Cost</th></tr></thead>
+      <tbody>${lines.map(l=>`<tr>
+        <td>${l.sku||'—'}</td><td>${l.item_name||'—'}</td><td>${l.location_code||'—'}</td>
+        <td>${l.qty_expected}</td><td>${l.qty_received}</td><td>$${(l.unit_cost||0).toFixed(2)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Close</button>
+      <button class="btn btn-primary" onclick="closeModalDirect();openInboundForm(${id})">✏️ Edit</button>`, true);
+}
+
+// ═══════════════════════════════════════════════════════════
+// OUTBOUND
+// ═══════════════════════════════════════════════════════════
+async function renderOutboundList() {
+  const r = await api('GET','/outbound');
+  const data = r.data||[];
+  const statusMap = { pending:['badge-orange','Pending'], in_progress:['badge-blue','In Progress'], completed:['badge-green','Completed'], cancelled:['badge-red','Cancelled'] };
+  document.getElementById('outbound-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Outbound Dispatches <span>${data.length} records</span></div>
+      <button class="btn btn-primary" onclick="openOutboundForm()">+ New Dispatch</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Reference</th><th>Destination</th><th>Dispatch Date</th><th>Status</th><th>Notes</th><th>Created By</th><th>Actions</th></tr></thead>
+          <tbody>
+          ${data.length ? data.map(o=>`<tr>
+            <td><strong>${o.reference_no}</strong></td>
+            <td>${o.destination||'—'}</td>
+            <td>${o.dispatch_date||'—'}</td>
+            <td>${badge(o.status,statusMap)}</td>
+            <td>${o.notes||'—'}</td>
+            <td>${o.created_by_name||'—'}</td>
+            <td><div class="gap">
+              <button class="btn btn-info btn-sm" onclick="viewOutbound(${o.id})">👁</button>
+              <button class="btn btn-secondary btn-sm" onclick="openOutboundForm(${o.id})">✏️</button>
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><div class="icon">📤</div><p>No outbound records</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function openOutboundForm(id=null) {
+  if(!itemsData.length) itemsData = (await api('GET','/items')).data||[];
+  if(!locationsData.length) locationsData = (await api('GET','/locations')).data||[];
+  let header={}, lines=[];
+  if(id) { const r=await api('GET',`/outbound/${id}`); header=r.data.header||{}; lines=r.data.lines||[]; }
+  if(!lines.length) lines=[{}];
+  const today = new Date().toISOString().split('T')[0];
+
+  const renderLines = (lns) => lns.map((l,i)=>`<tr id="obl-${i}">
+    <td><select class="obl-item">
+      <option value="">--</option>
+      ${itemsData.map(it=>`<option value="${it.id}" ${l.item_id==it.id?'selected':''}>${it.sku} – ${it.name}</option>`).join('')}
+    </select></td>
+    <td><select class="obl-loc">
+      <option value="">--</option>
+      ${locationsData.map(lc=>`<option value="${lc.id}" ${l.location_id==lc.id?'selected':''}>${lc.code}</option>`).join('')}
+    </select></td>
+    <td><input type="number" class="obl-req" value="${l.qty_requested||0}" min="0"></td>
+    <td><input type="number" class="obl-disp" value="${l.qty_dispatched||0}" min="0"></td>
+    <td><input class="obl-notes" value="${l.notes||''}"></td>
+    <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`).join('');
+
+  openModal(id?'Edit Dispatch':'New Dispatch', `
+    <div class="form-row">
+      <div class="form-group"><label>Reference No</label><input id="f-ref" value="${header.reference_no||''}" placeholder="Auto-generated"></div>
+      <div class="form-group"><label>Destination</label><input id="f-dest" value="${header.destination||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Dispatch Date *</label><input type="date" id="f-date" value="${header.dispatch_date||today}"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="f-status">
+          <option value="pending" ${header.status=='pending'?'selected':''}>Pending</option>
+          <option value="in_progress" ${header.status=='in_progress'?'selected':''}>In Progress</option>
+          <option value="completed" ${header.status=='completed'?'selected':''}>Completed</option>
+          <option value="cancelled" ${header.status=='cancelled'?'selected':''}>Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="f-notes">${header.notes||''}</textarea></div>
+    <hr class="divider">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="font-size:13px">Line Items</strong>
+      <button class="btn btn-secondary btn-sm" onclick="addOBLine()">+ Add Line</button>
+    </div>
+    <div class="table-wrap">
+      <table class="lines-table">
+        <thead><tr><th>Item</th><th>Location</th><th>Req Qty</th><th>Disp Qty</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="ob-lines">${renderLines(lines)}</tbody>
+      </table>
+    </div>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOutbound(${id||'null'})">💾 Save</button>`, true);
+}
+
+function addOBLine() {
+  const tbody = document.getElementById('ob-lines');
+  const tr = document.createElement('tr');
+  const itemOpts = itemsData.map(it=>`<option value="${it.id}">${it.sku} – ${it.name}</option>`).join('');
+  const locOpts = locationsData.map(lc=>`<option value="${lc.id}">${lc.code}</option>`).join('');
+  tr.innerHTML = `<td><select class="obl-item"><option value="">--</option>${itemOpts}</select></td>
+    <td><select class="obl-loc"><option value="">--</option>${locOpts}</select></td>
+    <td><input type="number" class="obl-req" value="0" min="0"></td>
+    <td><input type="number" class="obl-disp" value="0" min="0"></td>
+    <td><input class="obl-notes" value=""></td>
+    <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function collectOBLines() {
+  return Array.from(document.getElementById('ob-lines').querySelectorAll('tr')).map(tr=>({
+    item_id: tr.querySelector('.obl-item')?.value||null,
+    location_id: tr.querySelector('.obl-loc')?.value||null,
+    qty_requested: parseFloat(tr.querySelector('.obl-req')?.value)||0,
+    qty_dispatched: parseFloat(tr.querySelector('.obl-disp')?.value)||0,
+    notes: tr.querySelector('.obl-notes')?.value||''
+  })).filter(l=>l.item_id);
+}
+
+async function saveOutbound(id) {
+  const body = {
+    reference_no: document.getElementById('f-ref').value,
+    destination: document.getElementById('f-dest').value,
+    dispatch_date: document.getElementById('f-date').value,
+    status: document.getElementById('f-status').value,
+    notes: document.getElementById('f-notes').value,
+    created_by: currentUser?.id,
+    lines: collectOBLines()
+  };
+  const res = id ? await api('PUT',`/outbound/${id}`,body) : await api('POST','/outbound',body);
+  if(res.success) { closeModalDirect(); toast(res.message,'success'); renderOutboundList(); }
+  else toast(res.message,'error');
+}
+
+async function viewOutbound(id) {
+  const r = await api('GET',`/outbound/${id}`);
+  const h = r.data.header, lines = r.data.lines||[];
+  const statusMap = { pending:['badge-orange','Pending'], in_progress:['badge-blue','In Progress'], completed:['badge-green','Completed'], cancelled:['badge-red','Cancelled'] };
+  openModal(`Dispatch: ${h.reference_no}`, `
+    <div class="detail-grid">
+      <div class="detail-item"><label>Reference</label><span>${h.reference_no}</span></div>
+      <div class="detail-item"><label>Destination</label><span>${h.destination||'—'}</span></div>
+      <div class="detail-item"><label>Date</label><span>${h.dispatch_date}</span></div>
+      <div class="detail-item"><label>Status</label><span>${badge(h.status,statusMap)}</span></div>
+    </div>
+    <table class="lines-table" style="width:100%">
+      <thead><tr><th>SKU</th><th>Item</th><th>Location</th><th>Req</th><th>Dispatched</th></tr></thead>
+      <tbody>${lines.map(l=>`<tr>
+        <td>${l.sku||'—'}</td><td>${l.item_name||'—'}</td><td>${l.location_code||'—'}</td>
+        <td>${l.qty_requested}</td><td>${l.qty_dispatched}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  `, `<button class="btn btn-secondary" onclick="closeModalDirect()">Close</button>
+      <button class="btn btn-primary" onclick="closeModalDirect();openOutboundForm(${id})">✏️ Edit</button>`, true);
+}
+
+// ═══════════════════════════════════════════════════════════
+// REPORTS
+// ═══════════════════════════════════════════════════════════
+function destroyCharts() {
+  Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+  chartInstances = {};
+}
+
+async function renderReports(type) {
+  destroyCharts();
+  const sel = `
+    <div class="report-selector">
+      <select onchange="renderReports(this.value)" id="report-sel">
+        <optgroup label="Overview"><option value="dashboard" ${type=='dashboard'?'selected':''}>📊 Dashboard (Consolidated)</option></optgroup>
+        <optgroup label="Master Data">
+          <option value="items_category" ${type=='items_category'?'selected':''}>📦 Items by Category</option>
+          <option value="suppliers_activity" ${type=='suppliers_activity'?'selected':''}>🏢 Supplier Activity</option>
+        </optgroup>
+        <optgroup label="Inbound">
+          <option value="inbound_status" ${type=='inbound_status'?'selected':''}>📥 Inbound by Status</option>
+          <option value="inbound_trend" ${type=='inbound_trend'?'selected':''}>📈 Inbound Trend</option>
+          <option value="top_inbound_items" ${type=='top_inbound_items'?'selected':''}>🔝 Top Received Items</option>
+        </optgroup>
+        <optgroup label="Inventory">
+          <option value="inventory_location" ${type=='inventory_location'?'selected':''}>📍 Inventory by Location</option>
+          <option value="inventory_value" ${type=='inventory_value'?'selected':''}>💰 Inventory Value</option>
+          <option value="inv_history" ${type=='inv_history'?'selected':''}>📋 Inventory History Report</option>
+          <option value="inv_snapshot" ${type=='inv_snapshot'?'selected':''}>📸 Inventory Snapshot</option>
+        </optgroup>
+        <optgroup label="Outbound">
+          <option value="outbound_status" ${type=='outbound_status'?'selected':''}>📤 Outbound by Status</option>
+          <option value="outbound_trend" ${type=='outbound_trend'?'selected':''}>📈 Outbound Trend</option>
+          <option value="top_outbound_items" ${type=='top_outbound_items'?'selected':''}>🔝 Top Dispatched Items</option>
+        </optgroup>
+      </select>
+    </div>`;
+
+  if(type==='dashboard') await renderDashboard(sel);
+  else if(type==='items_category') await renderItemsCategoryReport(sel);
+  else if(type==='inventory_location') await renderInventoryLocationReport(sel);
+  else if(type==='suppliers_activity') await renderSuppliersReport(sel);
+  else if(type==='inventory_value') await renderInventoryValueReport(sel);
+  else if(type==='inbound_status') await renderInboundStatusReport(sel);
+  else if(type==='inbound_trend') await renderInboundTrendReport(sel);
+  else if(type==='top_inbound_items') await renderTopInboundReport(sel);
+  else if(type==='outbound_status') await renderOutboundStatusReport(sel);
+  else if(type==='outbound_trend') await renderOutboundTrendReport(sel);
+  else if(type==='top_outbound_items') await renderTopOutboundReport(sel);
+  else if(type==='inv_history')      await renderInvHistoryReport(sel);
+  else if(type==='inv_snapshot')     await renderInvSnapshotReport(sel);
+}
+
+async function renderDashboard(sel) {
+  const r = await api('GET','/reports/dashboard');
+  const d = r.data||{};
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Consolidated Dashboard</div></div>
+    <div class="stat-grid">
+      <div class="stat-card accent"><div class="stat-label">Items</div><div class="stat-value">${d.items||0}</div><div class="stat-sub">Active items</div></div>
+      <div class="stat-card blue"><div class="stat-label">Locations</div><div class="stat-value">${d.locations||0}</div><div class="stat-sub">Active locations</div></div>
+      <div class="stat-card"><div class="stat-label">Suppliers</div><div class="stat-value">${d.suppliers||0}</div><div class="stat-sub">Active suppliers</div></div>
+      <div class="stat-card purple"><div class="stat-label">Users</div><div class="stat-value">${d.users||0}</div><div class="stat-sub">Active users</div></div>
+      <div class="stat-card green"><div class="stat-label">Inbound</div><div class="stat-value">${d.inbound_total||0}</div><div class="stat-sub">${d.inbound_pending||0} pending</div></div>
+      <div class="stat-card red"><div class="stat-label">Outbound</div><div class="stat-value">${d.outbound_total||0}</div><div class="stat-sub">${d.outbound_pending||0} pending</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">Inbound vs Outbound</div><div class="chart-container"><canvas id="ch-flow"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Pending Operations</div><div class="chart-container"><canvas id="ch-pending"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Master Data Overview</div><div class="chart-container"><canvas id="ch-master"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Transaction Status</div><div class="chart-container"><canvas id="ch-status"></canvas></div></div>
+    </div>`;
+
+  const palette = ['#f0883e','#58a6ff','#3fb950','#ff7b72','#bc8cff','#79c0ff'];
+
+  chartInstances.flow = new Chart(document.getElementById('ch-flow'), {
+    type:'bar', data:{
+      labels:['Inbound','Outbound'],
+      datasets:[{data:[d.inbound_total||0,d.outbound_total||0],backgroundColor:[palette[1],palette[0]],borderRadius:6}]
+    }, options:{...chartOpts('bar'), plugins:{legend:{display:false}}}
+  });
+  chartInstances.pending = new Chart(document.getElementById('ch-pending'), {
+    type:'doughnut', data:{
+      labels:['Inbound Pending','Outbound Pending','Completed'],
+      datasets:[{data:[d.inbound_pending||0,d.outbound_pending||0,((d.inbound_total+d.outbound_total)-(d.inbound_pending+d.outbound_pending))||0],backgroundColor:palette.slice(0,3)}]
+    }, options:{...chartOpts('doughnut')}
+  });
+  chartInstances.master = new Chart(document.getElementById('ch-master'), {
+    type:'bar', data:{
+      labels:['Items','Locations','Suppliers','UoMs','Users'],
+      datasets:[{data:[d.items,d.locations,d.suppliers,d.uom,d.users],backgroundColor:palette,borderRadius:6}]
+    }, options:{...chartOpts('bar'), plugins:{legend:{display:false}}}
+  });
+
+  // Fetch inbound/outbound status for last chart
+  const [ibS, obS] = await Promise.all([api('GET','/reports/inbound_by_status'), api('GET','/reports/outbound_by_status')]);
+  const ibData = ibS.data||[], obData = obS.data||[];
+  const allStatuses = [...new Set([...ibData.map(x=>x.status),...obData.map(x=>x.status)])];
+  const ibMap = Object.fromEntries(ibData.map(x=>[x.status,x.count]));
+  const obMap = Object.fromEntries(obData.map(x=>[x.status,x.count]));
+  chartInstances.status = new Chart(document.getElementById('ch-status'), {
+    type:'bar', data:{
+      labels: allStatuses.length ? allStatuses : ['No Data'],
+      datasets:[
+        {label:'Inbound', data: allStatuses.map(s=>ibMap[s]||0), backgroundColor:palette[1], borderRadius:4},
+        {label:'Outbound', data: allStatuses.map(s=>obMap[s]||0), backgroundColor:palette[0], borderRadius:4}
+      ]
+    }, options:{...chartOpts(), scales:{x:{stacked:false},y:{stacked:false}}}
+  });
+}
+
+function chartOpts(type='bar') {
+  const base = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'#8b949e', font:{size:11} } } },
+  };
+  if(type==='pie'||type==='doughnut') return base;
+  return {
+    ...base,
+    scales:{
+      x:{ ticks:{ color:'#6e7681' }, grid:{ color:'rgba(48,54,61,.5)' } },
+      y:{ ticks:{ color:'#6e7681' }, grid:{ color:'rgba(48,54,61,.5)' } }
+    }
+  };
+}
+
+async function renderItemsCategoryReport(sel) {
+  const r = await api('GET','/reports/items_by_category');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Items by Category</div></div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Item Count by Category</div><div class="chart-container" style="height:280px"><canvas id="ch-icat"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table><thead><tr><th>Category</th><th>Item Count</th><th>% of Total</th></tr></thead>
+        <tbody>${data.map(d=>`<tr><td>${d.category}</td><td>${d.count}</td><td>${((d.count/(data.reduce((a,b)=>a+b.count,0)))*100).toFixed(1)}%</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  const palette = ['#f0883e','#58a6ff','#3fb950','#ff7b72','#bc8cff','#79c0ff','#d2a8ff','#ffa657'];
+  chartInstances.icat = new Chart(document.getElementById('ch-icat'), {
+    type:'pie', data:{
+      labels:data.map(d=>d.category),
+      datasets:[{data:data.map(d=>d.count),backgroundColor:palette}]
+    }, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#8b949e'}}}}
+  });
+}
+
+async function renderInventoryLocationReport(sel) {
+  const r = await api('GET','/reports/inventory_by_location');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Inventory by Location</div></div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Total Quantity by Location</div><div class="chart-container" style="height:260px"><canvas id="ch-iloc"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Location Code</th><th>Name</th><th>Total Qty</th><th>Unique Items</th></tr></thead>
+      <tbody>${data.map(d=>`<tr><td><strong>${d.code}</strong></td><td>${d.name}</td><td>${d.total_qty||0}</td><td>${d.item_count||0}</td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  chartInstances.iloc = new Chart(document.getElementById('ch-iloc'), {
+    type:'bar', data:{
+      labels:data.map(d=>d.code),
+      datasets:[{label:'Total Quantity',data:data.map(d=>d.total_qty||0),backgroundColor:'#58a6ff',borderRadius:6}]
+    }, options:{...chartOpts(), plugins:{legend:{display:false}}}
+  });
+}
+
+async function renderSuppliersReport(sel) {
+  const r = await api('GET','/reports/suppliers_activity');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Supplier Activity</div></div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">Inbound Count by Supplier</div><div class="chart-container"><canvas id="ch-sc"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Total Received Qty by Supplier</div><div class="chart-container"><canvas id="ch-sq"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Supplier</th><th>Inbound Orders</th><th>Total Received Qty</th></tr></thead>
+      <tbody>${data.map(d=>`<tr><td>${d.name}</td><td>${d.inbound_count}</td><td>${d.total_received||0}</td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  const p=['#f0883e','#58a6ff','#3fb950','#ff7b72','#bc8cff'];
+  chartInstances.sc = new Chart(document.getElementById('ch-sc'),{type:'doughnut',data:{labels:data.map(d=>d.name),datasets:[{data:data.map(d=>d.inbound_count),backgroundColor:p}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b949e'}}}}});
+  chartInstances.sq = new Chart(document.getElementById('ch-sq'),{type:'bar',data:{labels:data.map(d=>d.name),datasets:[{data:data.map(d=>d.total_received||0),backgroundColor:'#3fb950',borderRadius:6}]},options:{...chartOpts('bar'),plugins:{legend:{display:false}}}});
+}
+
+async function renderInventoryValueReport(sel) {
+  const r = await api('GET','/reports/inventory_value');
+  const data = r.data||[];
+  const total = data.reduce((a,b)=>a+(b.total_value||0),0);
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Inventory Value</div>
+      <div class="stat-card green" style="padding:10px 18px"><div class="stat-label">Total Value</div><div class="stat-value" style="font-size:20px">$${total.toFixed(2)}</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Top Items by Value</div><div class="chart-container" style="height:260px"><canvas id="ch-iv"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Qty</th><th>Unit Cost</th><th>Total Value</th></tr></thead>
+      <tbody>${data.map(d=>`<tr><td>${d.sku}</td><td>${d.name}</td><td>${d.category||'—'}</td><td>${d.total_qty||0}</td><td>$${(d.unit_cost||0).toFixed(2)}</td><td><strong>$${(d.total_value||0).toFixed(2)}</strong></td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  chartInstances.iv = new Chart(document.getElementById('ch-iv'),{type:'bar',data:{labels:data.slice(0,10).map(d=>d.sku),datasets:[{label:'Value ($)',data:data.slice(0,10).map(d=>d.total_value||0),backgroundColor:'#bc8cff',borderRadius:6}]},options:{...chartOpts(),plugins:{legend:{display:false}}}});
+}
+
+async function renderInboundStatusReport(sel) {
+  const r = await api('GET','/reports/inbound_by_status');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Inbound by Status</div></div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">Status Distribution</div><div class="chart-container"><canvas id="ch-is"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Count Comparison</div><div class="chart-container"><canvas id="ch-is2"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Status</th><th>Count</th></tr></thead>
+      <tbody>${data.map(d=>`<tr><td>${d.status}</td><td>${d.count}</td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  const p=['#f0883e','#58a6ff','#3fb950','#ff7b72'];
+  chartInstances.is = new Chart(document.getElementById('ch-is'),{type:'pie',data:{labels:data.map(d=>d.status),datasets:[{data:data.map(d=>d.count),backgroundColor:p}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b949e'}}}}});
+  chartInstances.is2 = new Chart(document.getElementById('ch-is2'),{type:'bar',data:{labels:data.map(d=>d.status),datasets:[{data:data.map(d=>d.count),backgroundColor:p,borderRadius:6}]},options:{...chartOpts('bar'),plugins:{legend:{display:false}}}});
+}
+
+async function renderInboundTrendReport(sel) {
+  const r = await api('GET','/reports/inbound_trend');
+  const data = (r.data||[]).reverse();
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Inbound Trend (Last 12 Months)</div></div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Monthly Inbound Activity</div><div class="chart-container" style="height:260px"><canvas id="ch-it"></canvas></div></div>
+    </div>`;
+  chartInstances.it = new Chart(document.getElementById('ch-it'),{type:'line',data:{labels:data.map(d=>d.month),datasets:[{label:'Receipts',data:data.map(d=>d.count),borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.1)',fill:true,tension:.4},{label:'Total Qty',data:data.map(d=>d.total_qty||0),borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.1)',fill:true,tension:.4}]},options:chartOpts()});
+}
+
+async function renderTopInboundReport(sel) {
+  const r = await api('GET','/reports/top_items_inbound');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Top Received Items</div></div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Top 10 Items by Received Quantity</div><div class="chart-container" style="height:260px"><canvas id="ch-ti"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Rank</th><th>SKU</th><th>Name</th><th>Total Received</th></tr></thead>
+      <tbody>${data.map((d,i)=>`<tr><td>#${i+1}</td><td>${d.sku}</td><td>${d.name}</td><td><strong>${d.total_received||0}</strong></td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  chartInstances.ti = new Chart(document.getElementById('ch-ti'),{type:'bar',data:{labels:data.map(d=>d.sku),datasets:[{label:'Qty Received',data:data.map(d=>d.total_received||0),backgroundColor:'#58a6ff',borderRadius:6}]},options:{...chartOpts(),plugins:{legend:{display:false}},indexAxis:'y'}});
+}
+
+async function renderOutboundStatusReport(sel) {
+  const r = await api('GET','/reports/outbound_by_status');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Outbound by Status</div></div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">Status Distribution</div><div class="chart-container"><canvas id="ch-os"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Count Comparison</div><div class="chart-container"><canvas id="ch-os2"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Status</th><th>Count</th></tr></thead>
+      <tbody>${data.map(d=>`<tr><td>${d.status}</td><td>${d.count}</td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  const p=['#f0883e','#58a6ff','#3fb950','#ff7b72'];
+  chartInstances.os = new Chart(document.getElementById('ch-os'),{type:'doughnut',data:{labels:data.map(d=>d.status),datasets:[{data:data.map(d=>d.count),backgroundColor:p}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b949e'}}}}});
+  chartInstances.os2 = new Chart(document.getElementById('ch-os2'),{type:'bar',data:{labels:data.map(d=>d.status),datasets:[{data:data.map(d=>d.count),backgroundColor:p,borderRadius:6}]},options:{...chartOpts('bar'),plugins:{legend:{display:false}}}});
+}
+
+async function renderOutboundTrendReport(sel) {
+  const r = await api('GET','/reports/outbound_trend');
+  const data = (r.data||[]).reverse();
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Outbound Trend (Last 12 Months)</div></div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Monthly Outbound Activity</div><div class="chart-container" style="height:260px"><canvas id="ch-ot"></canvas></div></div>
+    </div>`;
+  chartInstances.ot = new Chart(document.getElementById('ch-ot'),{type:'line',data:{labels:data.map(d=>d.month),datasets:[{label:'Dispatches',data:data.map(d=>d.count),borderColor:'#f0883e',backgroundColor:'rgba(240,136,62,.1)',fill:true,tension:.4},{label:'Total Qty',data:data.map(d=>d.total_qty||0),borderColor:'#ff7b72',backgroundColor:'rgba(255,123,114,.1)',fill:true,tension:.4}]},options:chartOpts()});
+}
+
+async function renderTopOutboundReport(sel) {
+  const r = await api('GET','/reports/top_items_outbound');
+  const data = r.data||[];
+  document.getElementById('reports-content').innerHTML = `
+    ${sel}
+    <div class="page-header"><div class="page-title">Top Dispatched Items</div></div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:span 2"><div class="chart-title">Top 10 Items by Dispatched Quantity</div><div class="chart-container" style="height:260px"><canvas id="ch-to"></canvas></div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Rank</th><th>SKU</th><th>Name</th><th>Total Dispatched</th></tr></thead>
+      <tbody>${data.map((d,i)=>`<tr><td>#${i+1}</td><td>${d.sku}</td><td>${d.name}</td><td><strong>${d.total_dispatched||0}</strong></td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  chartInstances.to = new Chart(document.getElementById('ch-to'),{type:'bar',data:{labels:data.map(d=>d.sku),datasets:[{label:'Qty Dispatched',data:data.map(d=>d.total_dispatched||0),backgroundColor:'#f0883e',borderRadius:6}]},options:{...chartOpts(),plugins:{legend:{display:false}},indexAxis:'y'}});
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+async function renderUtilities() {
+  const r = await api('GET','/backups');
+  const backups = r.data||[];
+  document.getElementById('utilities-content').innerHTML = `
+    <div class="page-header"><div class="page-title">Utilities — Database Backup & Restore</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div>
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><div class="card-title">💾 Create Backup</div></div>
+          <div class="card-body">
+            <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Create a timestamped backup of the current database. All data will be preserved.</p>
+            <button class="btn btn-primary" onclick="createBackup()">🗄 Create Backup Now</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📤 Restore from File</div></div>
+          <div class="card-body">
+            <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Upload a .db file to restore the database. Current data will be overwritten.</p>
+            <input type="file" id="restore-file" accept=".db" style="color:var(--text2);font-size:13px;margin-bottom:12px;display:block">
+            <button class="btn btn-danger" onclick="restoreFromFile()">⚠️ Restore from Upload</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📂 Backup Files</div>
+            <span style="color:var(--text3);font-size:12px">${backups.length} backup(s)</span>
+          </div>
+          <div class="card-body">
+            ${backups.length ? `<div class="backup-list">
+              ${backups.map(b=>`<div class="backup-item">
+                <span class="backup-icon">🗃</span>
+                <div class="backup-info">
+                  <div class="backup-name">${b.filename}</div>
+                  <div class="backup-meta">${b.created} · ${(b.size/1024).toFixed(1)} KB</div>
+                </div>
+                <div class="backup-actions">
+                  <button class="btn btn-info btn-sm" onclick="restoreBackup('${b.filename}')">↩ Restore</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteBackup('${b.filename}')">🗑</button>
+                </div>
+              </div>`).join('')}
+            </div>` : `<div class="empty-state"><div class="icon">🗄</div><p>No backups yet</p></div>`}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function createBackup() {
+  const r = await api('POST','/backup',{});
+  if(r.success) { toast(`Backup created: ${r.data.filename}`,'success'); renderUtilities(); }
+  else toast(r.message,'error');
+}
+
+async function restoreBackup(filename) {
+  if(!confirm(`Restore database from "${filename}"? Current data will be overwritten!`)) return;
+  const r = await api('POST','/restore',{filename});
+  if(r.success) { toast(r.message,'success'); renderUtilities(); }
+  else toast(r.message,'error');
+}
+
+async function deleteBackup(filename) {
+  if(!confirm(`Delete backup "${filename}"?`)) return;
+  const r = await api('POST','/backup/delete',{filename});
+  if(r.success) { toast(r.message,'success'); renderUtilities(); }
+  else toast(r.message,'error');
+}
+
+async function restoreFromFile() {
+  const file = document.getElementById('restore-file').files[0];
+  if(!file) { toast('Please select a .db file','error'); return; }
+  if(!confirm('Restore from uploaded file? Current data will be overwritten!')) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const data = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
+    const r = await api('POST','/restore/upload',{data, filename:file.name});
+    if(r.success) { toast(r.message,'success'); renderUtilities(); }
+    else toast(r.message,'error');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+
+// ══════════════════════════════════════════════════════════════════════
+// INVENTORY REPORTS — History & Snapshot
+// ══════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// INVENTORY HISTORY REPORT  — Oracle Cloud WMS Style
+// ══════════════════════════════════════════════════════════════════════════════
+
+// State for filters
+let _invHist = [], _invSnap = [];
+
+async function renderInvHistoryReport(sel) {
+  let data;
+  try {
+    const r = await api('GET', '/reports/inventory_history');
+    data = _invHist = r.data || [];
+  } catch(e) { toast('Failed to load report: ' + e.message, 'error'); return; }
+
+  // Pull distinct values for filter dropdowns
+  const skus     = [...new Set(data.map(r=>r.item_sku))].sort();
+  const locs     = [...new Set(data.map(r=>r.location_code).filter(Boolean))].sort();
+  const cats     = [...new Set(data.map(r=>r.item_category).filter(Boolean))].sort();
+  const txnTypes = ['ALL','RECEIPT','DISPATCH'];
+
+  const el = document.getElementById('reports-content');
+  el.innerHTML = `
+    <div class="rpt-shell">
+      ${sel}
+      ${_buildMasthead('Inventory Transaction History Report','INV-HIST-001', data.length)}
+
+      <!-- Filter Bar -->
+      <div class="rpt-filter-bar" id="ih-filter-bar">
+        <label>TXN TYPE</label>
+        <select id="ih-f-type" onchange="filterInvHist()">
+          ${txnTypes.map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>ITEM SKU</label>
+        <select id="ih-f-sku" onchange="filterInvHist()">
+          <option value="">ALL ITEMS</option>
+          ${skus.map(s=>`<option value="${s}">${s}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>LOCATION</label>
+        <select id="ih-f-loc" onchange="filterInvHist()">
+          <option value="">ALL LOCATIONS</option>
+          ${locs.map(l=>`<option value="${l}">${l}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>CATEGORY</label>
+        <select id="ih-f-cat" onchange="filterInvHist()">
+          <option value="">ALL</option>
+          ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>FROM</label>
+        <input type="date" id="ih-f-from" onchange="filterInvHist()">
+        <label>TO</label>
+        <input type="date" id="ih-f-to" onchange="filterInvHist()">
+        <div style="flex:1"></div>
+        <div class="rpt-actions">
+          <button class="btn-export" onclick="exportInvHistCSV()">⬇ Export CSV</button>
+          <button class="btn-export" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-secondary btn-sm" onclick="resetInvHistFilters()">↺ Reset</button>
+        </div>
+      </div>
+
+      <!-- KPI band + table injected by filterInvHist -->
+      <div id="ih-body"></div>
+    </div>`;
+
+  filterInvHist(); // initial render with no filters
+}
+
+function _buildMasthead(title, rptId, rowCount) {
+  const now  = new Date();
+  const runAt = now.toLocaleString('en-US',{dateStyle:'long',timeStyle:'medium'});
+  const runBy = (typeof currentUser !== 'undefined' && currentUser)
+    ? (currentUser.full_name || currentUser.username) : 'System';
+  return `
+    <div class="rpt-masthead">
+      <div class="rpt-masthead-top">
+        <div class="rpt-oracle-logo">
+          <div class="rpt-oracle-wordmark">My Warehouse</div>
+          <div class="rpt-oracle-sub">Management</div>
+        </div>
+        <div class="rpt-title-block">
+          <div class="rpt-title">${title}</div>
+          <div class="rpt-subtitle">Report ID: ${rptId} &nbsp;|&nbsp; Organization: WMS-001 &nbsp;|&nbsp; ${rowCount} Transaction(s)</div>
+        </div>
+        <div class="rpt-run-info">
+          Run Date: ${runAt}<br>
+          Run By: ${runBy}<br>
+          Status: COMPLETE
+        </div>
+      </div>
+      <div class="rpt-masthead-bottom">
+        <span class="rpt-param-chip">Organization: <strong>WMS-001</strong></span>
+        <span class="rpt-param-chip">Fiscal Period: <strong>Current</strong></span>
+        <span class="rpt-param-chip">Currency: <strong>USD</strong></span>
+        <span class="rpt-param-chip">Sort: <strong>Date DESC</strong></span>
+      </div>
+    </div>`;
+}
+
+function filterInvHist() {
+  const type = document.getElementById('ih-f-type')?.value || '';
+  const sku  = document.getElementById('ih-f-sku')?.value  || '';
+  const loc  = document.getElementById('ih-f-loc')?.value  || '';
+  const cat  = document.getElementById('ih-f-cat')?.value  || '';
+  const from = document.getElementById('ih-f-from')?.value || '';
+  const to   = document.getElementById('ih-f-to')?.value   || '';
+
+  let rows = _invHist.filter(r => {
+    if(type && type !== 'ALL' && r.txn_type !== type) return false;
+    if(sku  && r.item_sku       !== sku)  return false;
+    if(loc  && r.location_code  !== loc)  return false;
+    if(cat  && r.item_category  !== cat)  return false;
+    if(from && r.txn_date < from)         return false;
+    if(to   && r.txn_date > to)           return false;
+    return true;
+  });
+
+  // Compute per-item running balance (across filtered rows, sorted by date asc)
+  const sorted = [...rows].sort((a,b)=>(a.txn_date+a.created_at).localeCompare(b.txn_date+b.created_at));
+  const runBal = {};
+  sorted.forEach(r => {
+    const key = r.item_sku + '|' + (r.location_code||'');
+    if(!runBal[key]) runBal[key] = 0;
+    if(r.txn_type === 'RECEIPT') runBal[key] += (r.qty_moved || 0);
+    else                          runBal[key] -= (r.qty_dispatched || 0);
+    r._runBal = runBal[key];
+  });
+  // Assign running balance back by txn order (rows already in desc order from server)
+  const balMap = {};
+  const sortedIds = sorted.map(r=>r.txn_type+'|'+r.txn_id);
+  sortedIds.forEach((k,i)=>{ balMap[k] = sorted[i]._runBal; });
+  rows = rows.map(r => ({ ...r, _runBal: balMap[r.txn_type+'|'+r.txn_id] ?? 0 }));
+
+  // KPIs
+  const totalTxns   = rows.length;
+  const receipts    = rows.filter(r=>r.txn_type==='RECEIPT');
+  const dispatches  = rows.filter(r=>r.txn_type==='DISPATCH');
+  const totalIn     = receipts.reduce((s,r)=>s+(r.qty_moved||0),0);
+  const totalOut    = dispatches.reduce((s,r)=>s+(r.qty_dispatched||0),0);
+  const totalValue  = receipts.reduce((s,r)=>s+(r.txn_value||0),0);
+  const uniqueItems = new Set(rows.map(r=>r.item_sku)).size;
+  const uniqueLocs  = new Set(rows.map(r=>r.location_code)).size;
+
+  const body = document.getElementById('ih-body');
+  if(!body) return;
+
+  if(!rows.length) {
+    body.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No transactions match the selected filters</p></div>`;
+    return;
+  }
+
+  // Group rows by item SKU for Oracle-style item grouping
+  const grouped = {};
+  rows.forEach(r => {
+    if(!grouped[r.item_sku]) grouped[r.item_sku] = { name: r.item_name, cat: r.item_category, rows: [] };
+    grouped[r.item_sku].rows.push(r);
+  });
+
+  body.innerHTML = `
+    <!-- KPI Band -->
+    <div class="rpt-kpi-band">
+      <div class="rpt-kpi blue">
+        <div class="rpt-kpi-label">Total Transactions</div>
+        <div class="rpt-kpi-value">${totalTxns.toLocaleString()}</div>
+        <div class="rpt-kpi-sub">${receipts.length} receipts · ${dispatches.length} dispatches</div>
+      </div>
+      <div class="rpt-kpi green">
+        <div class="rpt-kpi-label">Total Qty In</div>
+        <div class="rpt-kpi-value">${totalIn.toLocaleString()}</div>
+        <div class="rpt-kpi-sub">Received across all orders</div>
+      </div>
+      <div class="rpt-kpi orange">
+        <div class="rpt-kpi-label">Total Qty Out</div>
+        <div class="rpt-kpi-value">${totalOut.toLocaleString()}</div>
+        <div class="rpt-kpi-sub">Dispatched across all orders</div>
+      </div>
+      <div class="rpt-kpi purple">
+        <div class="rpt-kpi-label">Net Movement</div>
+        <div class="rpt-kpi-value" style="color:${totalIn-totalOut>=0?'#4ade80':'#f87171'}">${totalIn-totalOut>=0?'+':''}${(totalIn-totalOut).toLocaleString()}</div>
+        <div class="rpt-kpi-sub">In minus Out</div>
+      </div>
+      <div class="rpt-kpi teal">
+        <div class="rpt-kpi-label">Receipt Value</div>
+        <div class="rpt-kpi-value" style="font-size:16px">$${totalValue.toFixed(2)}</div>
+        <div class="rpt-kpi-sub">USD at unit cost</div>
+      </div>
+      <div class="rpt-kpi">
+        <div class="rpt-kpi-label">Items · Locations</div>
+        <div class="rpt-kpi-value">${uniqueItems}</div>
+        <div class="rpt-kpi-sub">${uniqueLocs} location(s)</div>
+      </div>
+    </div>
+
+    <!-- Transaction Table -->
+    <div class="rpt-section-hd">
+      <span class="rpt-section-title">Transaction Detail Lines</span>
+      <span class="rpt-section-count">${rows.length} line(s) · Grouped by Item</span>
+    </div>
+    <div class="rpt-table-wrap">
+      <table class="rpt-table">
+        <thead><tr>
+          <th style="width:26px">#</th>
+          <th>Txn Type</th>
+          <th>Document No</th>
+          <th>Txn Date</th>
+          <th>Item SKU</th>
+          <th>Item Description</th>
+          <th>Category</th>
+          <th>UoM</th>
+          <th>Location</th>
+          <th>Zone</th>
+          <th>Supplier / Dest</th>
+          <th>Doc Status</th>
+          <th style="text-align:right">Qty In</th>
+          <th style="text-align:right">Qty Out</th>
+          <th style="text-align:right">Unit Cost</th>
+          <th style="text-align:right">Txn Value</th>
+          <th style="text-align:right">Run Balance</th>
+          <th>Created By</th>
+        </tr></thead>
+        <tbody>
+        ${Object.entries(grouped).map(([sku, grp]) => {
+          const grpIn  = grp.rows.reduce((s,r)=>s+(r.qty_moved||0),0);
+          const grpOut = grp.rows.reduce((s,r)=>s+(r.qty_dispatched||0),0);
+          const grpVal = grp.rows.reduce((s,r)=>s+(r.txn_value||0),0);
+          const lines  = grp.rows.map((r,i) => {
+            const bal  = r._runBal ?? 0;
+            const balCls = bal > 0 ? 'bal-pos' : bal < 0 ? 'bal-neg' : 'bal-zero';
+            const docCls = 'doc-'+(r.document_status||'pending');
+            const qtyIn  = r.qty_moved     || 0;
+            const qtyOut = r.qty_dispatched|| 0;
+            return `<tr>
+              <td style="color:var(--text3);font-family:monospace;font-size:10px">${i+1}</td>
+              <td><span class="txn-badge txn-${r.txn_type}">${r.txn_type==='RECEIPT'?'↓ RECEIPT':'↑ DISPATCH'}</span></td>
+              <td style="font-family:monospace;font-size:11px;color:var(--accent2)">${r.document_no}</td>
+              <td style="font-family:monospace;font-size:11px;white-space:nowrap">${r.txn_date||'—'}</td>
+              <td><strong style="color:var(--accent);font-family:monospace;font-size:11px">${r.item_sku}</strong></td>
+              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.item_name||''}">${r.item_name||'—'}</td>
+              <td style="font-size:11px">${r.item_category||'—'}</td>
+              <td style="font-family:monospace;font-size:11px">${r.uom||'—'}</td>
+              <td><code style="background:rgba(255,255,255,.04);padding:2px 5px;border-radius:3px;font-size:10px;color:var(--accent5)">${r.location_code||'—'}</code></td>
+              <td style="font-size:11px">${r.zone||'—'}</td>
+              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="${r.supplier_name||''}">${r.supplier_name||'—'}</td>
+              <td><span class="doc-status ${docCls}">${(r.document_status||'—').replace('_',' ')}</span></td>
+              <td style="text-align:right">${qtyIn>0?`<span class="qty-in">+${qtyIn}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+              <td style="text-align:right">${qtyOut>0?`<span class="qty-out">-${qtyOut}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+              <td style="text-align:right;font-family:monospace;font-size:11px">${r.unit_cost>0?'$'+r.unit_cost.toFixed(2):'—'}</td>
+              <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--accent3)">${r.txn_value>0?'$'+r.txn_value.toFixed(2):'—'}</td>
+              <td class="bal-cell ${balCls}">${bal >= 0 ? '' : ''}${bal}</td>
+              <td style="font-size:11px;color:var(--text3)">${r.created_by||'—'}</td>
+            </tr>`;
+          }).join('');
+          return `<tr class="rpt-group-row"><td colspan="18">
+              📦 ${sku} — ${grp.name||''}
+              <span style="color:var(--text3);font-size:10px;font-weight:400;margin-left:12px">
+                ${grp.rows.length} txn(s) &nbsp;|&nbsp;
+                In: <span style="color:#4ade80">${grpIn}</span> &nbsp;
+                Out: <span style="color:#fb923c">${grpOut}</span> &nbsp;
+                Value: <span style="color:var(--accent3)">$${grpVal.toFixed(2)}</span>
+              </span>
+            </td></tr>` + lines;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Report Footer -->
+    <div class="rpt-footer">
+      <span>Report: INV-HIST-001 &nbsp;|&nbsp; Generated: ${new Date().toLocaleString()}</span>
+      <span>${rows.length} transactions &nbsp;|&nbsp; ${uniqueItems} item(s) &nbsp;|&nbsp; ${uniqueLocs} location(s)</span>
+      <span>My Warehouse Management · WMS-001</span>
+    </div>`;
+}
+
+function resetInvHistFilters() {
+  ['ih-f-type','ih-f-sku','ih-f-loc','ih-f-cat'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = id==='ih-f-type'?'ALL':'';
+  });
+  ['ih-f-from','ih-f-to'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  filterInvHist();
+}
+
+function exportInvHistCSV() {
+  const type = document.getElementById('ih-f-type')?.value || 'ALL';
+  const sku  = document.getElementById('ih-f-sku')?.value  || '';
+  const loc  = document.getElementById('ih-f-loc')?.value  || '';
+  const cat  = document.getElementById('ih-f-cat')?.value  || '';
+  const from = document.getElementById('ih-f-from')?.value || '';
+  const to   = document.getElementById('ih-f-to')?.value   || '';
+  let rows = _invHist.filter(r => {
+    if(type && type !== 'ALL' && r.txn_type !== type) return false;
+    if(sku  && r.item_sku !== sku) return false;
+    if(loc  && r.location_code !== loc) return false;
+    if(cat  && r.item_category !== cat) return false;
+    if(from && r.txn_date < from) return false;
+    if(to   && r.txn_date > to)   return false;
+    return true;
+  });
+  const headers = ['TXN_TYPE','DOCUMENT_NO','TXN_DATE','ITEM_SKU','ITEM_NAME','CATEGORY','UOM',
+                   'LOCATION','ZONE','SUPPLIER_DEST','DOC_STATUS','QTY_IN','QTY_OUT',
+                   'UNIT_COST','TXN_VALUE','CREATED_BY'];
+  const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const csv = [headers.join(','),
+    ...rows.map(r=>[r.txn_type,r.document_no,r.txn_date,r.item_sku,r.item_name,
+      r.item_category,r.uom,r.location_code,r.zone,r.supplier_name,r.document_status,
+      r.qty_moved||0,r.qty_dispatched||0,r.unit_cost||0,r.txn_value||0,r.created_by
+    ].map(esc).join(','))
+  ].join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `INV-HIST-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSV exported','success');
+}
+
+// ── Inventory Snapshot Report ─────────────────────────────────────────────────
+async function renderInvSnapshotReport(sel) {
+  let data;
+  try {
+    const r = await api('GET', '/reports/inventory_snapshot');
+    data = _invSnap = r.data || [];
+  } catch(e) { toast('Failed to load snapshot: '+e.message,'error'); return; }
+
+  const skus  = [...new Set(data.map(r=>r.sku))].sort();
+  const locs  = [...new Set(data.map(r=>r.location_code).filter(Boolean))].sort();
+  const cats  = [...new Set(data.map(r=>r.category).filter(Boolean))].sort();
+  const zones = [...new Set(data.map(r=>r.zone).filter(Boolean))].sort();
+
+  const el = document.getElementById('reports-content');
+  el.innerHTML = `
+    <div class="rpt-shell">
+      ${sel}
+      ${_buildMasthead('Inventory On-Hand Snapshot Report','INV-SNAP-001', data.length)}
+      <div class="rpt-filter-bar">
+        <label>SKU</label>
+        <select id="is-f-sku" onchange="filterInvSnap()">
+          <option value="">ALL</option>
+          ${skus.map(s=>`<option value="${s}">${s}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>LOCATION</label>
+        <select id="is-f-loc" onchange="filterInvSnap()">
+          <option value="">ALL</option>
+          ${locs.map(l=>`<option value="${l}">${l}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>ZONE</label>
+        <select id="is-f-zone" onchange="filterInvSnap()">
+          <option value="">ALL</option>
+          ${zones.map(z=>`<option value="${z}">${z}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>CATEGORY</label>
+        <select id="is-f-cat" onchange="filterInvSnap()">
+          <option value="">ALL</option>
+          ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <div class="rpt-filter-sep"></div>
+        <label>STATUS</label>
+        <select id="is-f-status" onchange="filterInvSnap()">
+          <option value="">ALL</option>
+          <option value="IN_STOCK">In Stock</option>
+          <option value="BELOW_REORDER">Below Reorder</option>
+          <option value="OUT_OF_STOCK">Out of Stock</option>
+        </select>
+        <div style="flex:1"></div>
+        <div class="rpt-actions">
+          <button class="btn-export" onclick="exportInvSnapCSV()">⬇ Export CSV</button>
+          <button class="btn-export" onclick="window.print()">🖨 Print</button>
+        </div>
+      </div>
+      <div id="is-body"></div>
+    </div>`;
+  filterInvSnap();
+}
+
+function filterInvSnap() {
+  const sku    = document.getElementById('is-f-sku')?.value    || '';
+  const loc    = document.getElementById('is-f-loc')?.value    || '';
+  const zone   = document.getElementById('is-f-zone')?.value   || '';
+  const cat    = document.getElementById('is-f-cat')?.value    || '';
+  const status = document.getElementById('is-f-status')?.value || '';
+  let rows = _invSnap.filter(r => {
+    if(sku    && r.sku           !== sku)    return false;
+    if(loc    && r.location_code !== loc)    return false;
+    if(zone   && r.zone          !== zone)   return false;
+    if(cat    && r.category      !== cat)    return false;
+    if(status && r.stock_status  !== status) return false;
+    return true;
+  });
+  const body = document.getElementById('is-body');
+  if(!body) return;
+  if(!rows.length) {
+    body.innerHTML=`<div class="empty-state"><div class="icon">📸</div><p>No inventory records match the filters</p></div>`;
+    return;
+  }
+  const totalQty   = rows.reduce((s,r)=>s+(r.on_hand_qty||0),0);
+  const totalVal   = rows.reduce((s,r)=>s+(r.stock_value||0),0);
+  const inStock    = rows.filter(r=>r.stock_status==='IN_STOCK').length;
+  const belowRO    = rows.filter(r=>r.stock_status==='BELOW_REORDER').length;
+  const outOfStock = rows.filter(r=>r.stock_status==='OUT_OF_STOCK').length;
+  const uniqueItems= new Set(rows.map(r=>r.sku)).size;
+
+  body.innerHTML=`
+    <div class="rpt-kpi-band">
+      <div class="rpt-kpi blue"><div class="rpt-kpi-label">Total Lines</div><div class="rpt-kpi-value">${rows.length}</div><div class="rpt-kpi-sub">${uniqueItems} unique SKUs</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-label">Total On Hand</div><div class="rpt-kpi-value">${totalQty.toLocaleString()}</div><div class="rpt-kpi-sub">Across all locations</div></div>
+      <div class="rpt-kpi teal"><div class="rpt-kpi-label">Total Stock Value</div><div class="rpt-kpi-value" style="font-size:16px">$${totalVal.toFixed(2)}</div><div class="rpt-kpi-sub">At unit cost</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-label">In Stock</div><div class="rpt-kpi-value" style="color:#4ade80">${inStock}</div><div class="rpt-kpi-sub">Above reorder point</div></div>
+      <div class="rpt-kpi orange"><div class="rpt-kpi-label">Below Reorder</div><div class="rpt-kpi-value" style="color:#fbbf24">${belowRO}</div><div class="rpt-kpi-sub">Action required</div></div>
+      <div class="rpt-kpi red"><div class="rpt-kpi-label">Out of Stock</div><div class="rpt-kpi-value" style="color:#f87171">${outOfStock}</div><div class="rpt-kpi-sub">Zero quantity</div></div>
+    </div>
+    <div class="rpt-section-hd">
+      <span class="rpt-section-title">On-Hand Inventory Detail</span>
+      <span class="rpt-section-count">${rows.length} line(s)</span>
+    </div>
+    <div class="rpt-table-wrap">
+      <table class="rpt-table">
+        <thead><tr>
+          <th>#</th><th>Item SKU</th><th>Item Description</th><th>Category</th>
+          <th>UoM</th><th>Location</th><th>Zone</th><th>Supplier</th>
+          <th style="text-align:right">On Hand Qty</th>
+          <th style="text-align:right">Reorder Pt</th>
+          <th style="text-align:right">Unit Cost</th>
+          <th style="text-align:right">Stock Value</th>
+          <th>Stock Status</th>
+          <th>Last Updated</th>
+        </tr></thead>
+        <tbody>
+        ${rows.map((r,i)=>`<tr>
+          <td style="color:var(--text3);font-family:monospace;font-size:10px">${i+1}</td>
+          <td><strong style="color:var(--accent);font-family:monospace;font-size:11px">${r.sku}</strong></td>
+          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.item_name||''}">${r.item_name||'—'}</td>
+          <td style="font-size:11px">${r.category||'—'}</td>
+          <td style="font-family:monospace;font-size:11px">${r.uom||'—'}</td>
+          <td><code style="background:rgba(255,255,255,.04);padding:2px 5px;border-radius:3px;font-size:10px;color:var(--accent5)">${r.location_code||'—'}</code></td>
+          <td style="font-size:11px">${r.zone||'—'}</td>
+          <td style="font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.supplier_name||'—'}</td>
+          <td style="text-align:right;font-family:monospace;font-weight:700">${r.on_hand_qty??'—'}</td>
+          <td style="text-align:right;font-family:monospace;color:var(--text3)">${r.reorder_point||0}</td>
+          <td style="text-align:right;font-family:monospace;font-size:11px">$${(r.unit_cost||0).toFixed(2)}</td>
+          <td style="text-align:right;font-family:monospace;font-weight:700;color:var(--accent3)">$${(r.stock_value||0).toFixed(2)}</td>
+          <td><span class="stock-${r.stock_status}">${(r.stock_status||'—').replace(/_/g,' ')}</span></td>
+          <td style="font-size:10px;color:var(--text3);font-family:monospace;white-space:nowrap">${(r.last_updated||'—').replace('T',' ').split('.')[0]}</td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="rpt-footer">
+      <span>Report: INV-SNAP-001 &nbsp;|&nbsp; As-of: ${new Date().toLocaleString()}</span>
+      <span>${rows.length} lines &nbsp;|&nbsp; Total Qty: ${totalQty} &nbsp;|&nbsp; Total Value: $${totalVal.toFixed(2)}</span>
+      <span>My Warehouse Management · WMS-001</span>
+    </div>`;
+}
+
+function exportInvSnapCSV() {
+  const rows = _invSnap;
+  const headers=['SKU','ITEM_NAME','CATEGORY','UOM','LOCATION','ZONE','SUPPLIER',
+                 'ON_HAND_QTY','REORDER_POINT','UNIT_COST','STOCK_VALUE','STOCK_STATUS','LAST_UPDATED'];
+  const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv=[headers.join(','),
+    ...rows.map(r=>[r.sku,r.item_name,r.category,r.uom,r.location_code,r.zone,r.supplier_name,
+      r.on_hand_qty,r.reorder_point,r.unit_cost,r.stock_value,r.stock_status,r.last_updated
+    ].map(esc).join(','))
+  ].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`INV-SNAP-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  toast('CSV exported','success');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELP — USER MANUAL
+// ═══════════════════════════════════════════════════════════
+function renderHelp(section) {
+  section = section || 'manual';
+  const el = document.getElementById('help-content');
+
+  const tocLinks = section === 'manual' ? `
+      <div class="help-toc-sub-title">Contents</div>
+      <a class="help-toc-link" href="#hm-intro">1. Introduction</a>
+      <a class="help-toc-link" href="#hm-login">2. Login &amp; Logout</a>
+      <a class="help-toc-link" href="#hm-nav">3. Navigation</a>
+      <a class="help-toc-link" href="#hm-home">4. Home Dashboard</a>
+      <a class="help-toc-link" href="#hm-master">5. Master Data</a>
+      <a class="help-toc-link indent" href="#hm-items">5.1 Items</a>
+      <a class="help-toc-link indent" href="#hm-locations">5.2 Locations</a>
+      <a class="help-toc-link indent" href="#hm-suppliers">5.3 Suppliers</a>
+      <a class="help-toc-link indent" href="#hm-uom">5.4 Units of Measure</a>
+      <a class="help-toc-link indent" href="#hm-users">5.5 Users</a>
+      <a class="help-toc-link" href="#hm-inbound">6. Inbound Receipts</a>
+      <a class="help-toc-link" href="#hm-outbound">7. Outbound Orders</a>
+      <a class="help-toc-link" href="#hm-reports">8. Reports</a>
+      <a class="help-toc-link" href="#hm-utilities">9. Utilities</a>
+      <a class="help-toc-link" href="#hm-roles">10. User Roles</a>
+      <a class="help-toc-link" href="#hm-tips">11. Tips &amp; Best Practices</a>
+      <a class="help-toc-link" href="#hm-glossary">12. Glossary</a>` : '';
+
+  const contactHTML = `
+    <div class="help-contact-wrap">
+      <div class="help-contact-icon">✉️</div>
+      <div class="help-contact-title">Contact Us</div>
+      <div class="help-contact-sub">Have a question, feedback, or need support?<br>We would love to hear from you.</div>
+      <div class="help-contact-card">
+        <div class="help-contact-label">📧 Email</div>
+        <a class="help-contact-email" href="mailto:shekharlog6@gmail.com">shekharlog6@gmail.com</a>
+        <div class="help-contact-hint">Click the email address to open your mail client, or copy it manually.</div>
+      </div>
+    </div>`;
+
+  const manualHTML = `
+    <div class="help-cover">
+      <div class="help-cover-icon">🏭</div>
+      <div>
+        <div class="help-cover-title">My Warehouse Management System</div>
+        <div class="help-cover-sub">User Manual &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; 2026</div>
+      </div>
+    </div>
+    <div class="hm-section" id="hm-intro">
+      <div class="hm-h1">1. Introduction</div>
+      <p class="hm-p">My Warehouse Management System (WMS) is a web-based application for managing end-to-end warehouse operations — inventory tracking, inbound goods receiving, outbound dispatch, reporting, and system administration.</p>
+      <div class="hm-h2">System Requirements</div>
+      <div class="hm-kv"><span class="hm-kv-key">Browser</span><span class="hm-kv-val">Any modern browser — Chrome, Edge, Firefox, Safari</span></div>
+      <div class="hm-kv"><span class="hm-kv-key">Server</span><span class="hm-kv-val">Application server running on your network (default port 5000)</span></div>
+      <div class="hm-kv"><span class="hm-kv-key">Credentials</span><span class="hm-kv-val">Valid username and password created by your administrator</span></div>
+    </div>
+    <div class="hm-section" id="hm-login">
+      <div class="hm-h1">2. Login &amp; Logout</div>
+      <div class="hm-h2">Logging In</div>
+      <ol class="hm-ol">
+        <li>Open the application URL in your browser.</li>
+        <li>Enter your <strong>Username</strong> in the first field.</li>
+        <li>Enter your <strong>Password</strong> in the second field.</li>
+        <li>Click <strong>🔐 Sign In</strong> or press Enter.</li>
+        <li>On success you are taken to the Home dashboard.</li>
+      </ol>
+      <div class="hm-note">💡 Credentials are not pre-filled for security. You must type your username and password every time.</div>
+      <div class="hm-h2">Logging Out</div>
+      <ol class="hm-ol">
+        <li>Click the <strong>⏻ Logout</strong> button in the top-right header.</li>
+        <li>You are returned to the login screen with all fields cleared.</li>
+        <li>Always log out when leaving your workstation.</li>
+      </ol>
+    </div>
+    <div class="hm-section" id="hm-nav">
+      <div class="hm-h1">3. Application Navigation</div>
+      <p class="hm-p">The application is organized into tabs at the top of the screen after login:</p>
+      <table class="hm-table">
+        <thead><tr><th>Tab</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>🏠 Home</td><td>Dashboard with KPIs, inventory status, recent orders, chart &amp; alerts</td></tr>
+          <tr><td>📦 Master Data</td><td>Manage Items, Locations, Suppliers, Units of Measure, Users</td></tr>
+          <tr><td>📥 Inbound</td><td>Create and manage inbound goods receipts from suppliers</td></tr>
+          <tr><td>📤 Outbound</td><td>Create and manage outbound dispatch orders</td></tr>
+          <tr><td>📊 Reports</td><td>Generate and export operational and analytical reports</td></tr>
+          <tr><td>🔧 Utilities</td><td>Database backup, restore, and system maintenance</td></tr>
+          <tr><td>❓ Help</td><td>User manual and contact information</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hm-section" id="hm-home">
+      <div class="hm-h1">4. Home Dashboard</div>
+      <p class="hm-p">The default screen after login. Provides a real-time warehouse summary.</p>
+      <div class="hm-h2">KPI Summary Cards</div>
+      <ul class="hm-ul">
+        <li><strong>Total Inventory</strong> — Total units on hand across all locations.</li>
+        <li><strong>Pending Inbound</strong> — Inbound orders that are pending or in progress.</li>
+        <li><strong>Orders in Process</strong> — Outbound orders pending or in progress.</li>
+        <li><strong>Stock Alerts</strong> — Items with low stock or out-of-stock status.</li>
+      </ul>
+      <div class="hm-h2">Weekly Stock Movement Chart</div>
+      <p class="hm-p">Line chart showing received (green) and dispatched (orange) quantities for the last 7 days.</p>
+      <div class="hm-h2">Alerts &amp; Notifications</div>
+      <p class="hm-p">Lists items below reorder point or out of stock, with SKU, current quantity, and reorder point.</p>
+    </div>
+    <div class="hm-section" id="hm-master">
+      <div class="hm-h1">5. Master Data</div>
+      <p class="hm-p">Holds all reference records used across the system. Use the left sidebar to switch between sub-sections.</p>
+      <div class="hm-h2" id="hm-items">5.1 Items</div>
+      <p class="hm-p">Products stored in the warehouse. Key fields: SKU, Name, Category, Unit of Measure, Supplier, Reorder Point, Reorder Qty, Unit Cost, Status.</p>
+      <ul class="hm-ul">
+        <li>Click <strong>➕ Add Item</strong> to create a new item.</li>
+        <li>Click the ✏️ icon on any row to edit.</li>
+        <li>Use the search box to filter by SKU, name, or category.</li>
+      </ul>
+      <div class="hm-h2" id="hm-locations">5.2 Locations</div>
+      <p class="hm-p">Physical storage positions inside the warehouse. Fields: Code, Name, Zone, Aisle/Rack/Bin, Type (Bulk/Rack/Bin/Cold/Staging), Capacity, Status.</p>
+      <div class="hm-h2" id="hm-suppliers">5.3 Suppliers</div>
+      <p class="hm-p">Companies from whom goods are received. Fields: Code, Name, Contact Person, Phone, Email, Address, Status.</p>
+      <div class="hm-h2" id="hm-uom">5.4 Units of Measure</div>
+      <p class="hm-p">Defines how quantities are counted — EA (Each), KG (Kilogram), PCS (Pieces), BOX (Box), etc.</p>
+      <div class="hm-h2" id="hm-users">5.5 Users</div>
+      <p class="hm-p">Manage system login accounts (admin only). Fields: Username, Full Name, Role (Operator/Manager/Admin), Password (👁 to show/hide), Status.</p>
+      <div class="hm-note">💡 When editing a user, leave Password blank to keep the current password unchanged.</div>
+    </div>
+    <div class="hm-section" id="hm-inbound">
+      <div class="hm-h1">6. Inbound Receipts</div>
+      <p class="hm-p">Manages all goods received from suppliers. Each order has a header and one or more line items.</p>
+      <div class="hm-h2">Creating a New Inbound Order</div>
+      <ol class="hm-ol">
+        <li>Click <strong>➕ New Inbound</strong>.</li>
+        <li>Fill header: Reference No, Supplier, Received Date, Status, Notes.</li>
+        <li>Click <strong>Add Line</strong>: Item, Location, Qty Expected, Qty Received, Unit Cost.</li>
+        <li>Click <strong>💾 Save</strong>.</li>
+      </ol>
+      <div class="hm-note">💡 Inventory is updated automatically when status is set to <strong>Completed</strong>.</div>
+      <div class="hm-h2">Order Statuses</div>
+      <table class="hm-table">
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="hm-badge hm-b-orange">Pending</span></td><td>Order created, goods not yet received</td></tr>
+          <tr><td><span class="hm-badge hm-b-blue">In Progress</span></td><td>Receiving is underway</td></tr>
+          <tr><td><span class="hm-badge hm-b-green">Completed</span></td><td>All goods received and inventory updated</td></tr>
+          <tr><td><span class="hm-badge hm-b-red">Cancelled</span></td><td>Order voided — no inventory impact</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hm-section" id="hm-outbound">
+      <div class="hm-h1">7. Outbound Orders</div>
+      <p class="hm-p">Manages all goods dispatched to customers or destinations.</p>
+      <div class="hm-h2">Creating a New Outbound Order</div>
+      <ol class="hm-ol">
+        <li>Click <strong>➕ New Outbound</strong>.</li>
+        <li>Fill header: Reference No, Destination, Dispatch Date, Status, Notes.</li>
+        <li>Click <strong>Add Line</strong>: Item, Location, Qty Requested, Qty Dispatched.</li>
+        <li>Click <strong>💾 Save</strong>.</li>
+      </ol>
+      <div class="hm-note">💡 Inventory is decremented automatically when status is set to <strong>Completed</strong>.</div>
+    </div>
+    <div class="hm-section" id="hm-reports">
+      <div class="hm-h1">8. Reports</div>
+      <p class="hm-p">Select a report from the dropdown at the top of the Reports tab.</p>
+      <table class="hm-table">
+        <thead><tr><th>Group</th><th>Report</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Overview</td><td>📊 Dashboard</td><td>High-level summary of all warehouse data</td></tr>
+          <tr><td rowspan="2">Master Data</td><td>📦 Items by Category</td><td>Item distribution across categories</td></tr>
+          <tr><td>🏢 Supplier Activity</td><td>Inbound orders and value by supplier</td></tr>
+          <tr><td rowspan="3">Inbound</td><td>📥 Inbound by Status</td><td>Order counts by status</td></tr>
+          <tr><td>📈 Inbound Trend</td><td>Time-series of inbound volumes</td></tr>
+          <tr><td>🔝 Top Received Items</td><td>Items ranked by total qty received</td></tr>
+          <tr><td rowspan="4">Inventory</td><td>📍 By Location</td><td>On-hand quantities by storage location</td></tr>
+          <tr><td>💰 Inventory Value</td><td>Stock value by item and location</td></tr>
+          <tr><td>📋 History Report</td><td>Full receipt/dispatch audit trail with running balances</td></tr>
+          <tr><td>📸 Snapshot</td><td>Current stock levels with IN STOCK / BELOW REORDER / OUT OF STOCK status</td></tr>
+          <tr><td rowspan="3">Outbound</td><td>📤 Outbound by Status</td><td>Order counts by status</td></tr>
+          <tr><td>📈 Outbound Trend</td><td>Time-series of dispatch volumes</td></tr>
+          <tr><td>🔝 Top Dispatched Items</td><td>Items ranked by total qty dispatched</td></tr>
+        </tbody>
+      </table>
+      <div class="hm-note">💡 Most reports support <strong>⬇ Export CSV</strong> and <strong>🖨 Print</strong>.</div>
+    </div>
+    <div class="hm-section" id="hm-utilities">
+      <div class="hm-h1">9. Utilities</div>
+      <p class="hm-p">Database administration tools — for administrators only.</p>
+      <div class="hm-h2">Create Backup</div>
+      <ol class="hm-ol">
+        <li>Click <strong>💾 Create Backup Now</strong>.</li>
+        <li>A timestamped backup file is saved on the server.</li>
+      </ol>
+      <div class="hm-h2">Restore from File</div>
+      <ol class="hm-ol">
+        <li>Click <strong>Choose File</strong> and select a .db backup file.</li>
+        <li>Click <strong>📤 Restore Database</strong>.</li>
+      </ol>
+      <div class="hm-note" style="border-left-color:#f87171;background:rgba(248,113,113,.07)">⚠️ <strong>Warning:</strong> Restoring permanently overwrites all current data. Always back up first.</div>
+    </div>
+    <div class="hm-section" id="hm-roles">
+      <div class="hm-h1">10. User Roles &amp; Permissions</div>
+      <table class="hm-table">
+        <thead><tr><th>Role</th><th>Capabilities</th><th>Restrictions</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Operator</strong></td><td>View all screens, create inbound/outbound, view reports</td><td>Cannot manage users or run utilities</td></tr>
+          <tr><td><strong>Manager</strong></td><td>All operator capabilities + edit master data</td><td>Cannot manage users</td></tr>
+          <tr><td><strong>Admin</strong></td><td>Full access including users and utilities</td><td>None</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hm-section" id="hm-tips">
+      <div class="hm-h1">11. Tips &amp; Best Practices</div>
+      <ul class="hm-ul">
+        <li>Set the correct <strong>Status</strong> on orders — inventory only updates on <strong>Completed</strong>.</li>
+        <li>Set a <strong>Reorder Point</strong> on each item to receive Low Stock alerts.</li>
+        <li>Run a <strong>Backup</strong> before bulk changes to master data.</li>
+        <li>Use <strong>Export CSV</strong> in reports for further spreadsheet analysis.</li>
+        <li>Always <strong>Log Out</strong> when leaving your workstation.</li>
+      </ul>
+    </div>
+    <div class="hm-section" id="hm-glossary">
+      <div class="hm-h1">12. Glossary</div>
+      <table class="hm-table">
+        <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+        <tbody>
+          <tr><td>SKU</td><td>Stock Keeping Unit — unique code identifying a specific item</td></tr>
+          <tr><td>UoM</td><td>Unit of Measure — how an item quantity is counted (EA, KG, PCS)</td></tr>
+          <tr><td>Inbound</td><td>Goods received into the warehouse from a supplier</td></tr>
+          <tr><td>Outbound</td><td>Goods dispatched from the warehouse to a customer or destination</td></tr>
+          <tr><td>On Hand Qty</td><td>Current physical quantity of an item at a specific location</td></tr>
+          <tr><td>Reorder Point</td><td>Minimum stock level that triggers a Low Stock alert</td></tr>
+          <tr><td>Snapshot</td><td>Point-in-time view of current inventory quantities</td></tr>
+          <tr><td>KPI</td><td>Key Performance Indicator — a measurable metric on the dashboard</td></tr>
+          <tr><td>WMS</td><td>Warehouse Management System</td></tr>
+          <tr><td>Backup</td><td>A saved copy of the database for disaster recovery</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="text-align:center;padding:24px 0 8px;color:var(--text3);font-size:11px;border-top:1px solid var(--border);margin-top:24px">
+      My Warehouse Management System &nbsp;·&nbsp; User Manual v1.0 &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; WMS-001
+    </div>`;
+
+  el.innerHTML =
+    '<div class="help-wrap">' +
+      '<div class="help-toc">' +
+        '<div class="help-toc-title">❓ Help</div>' +
+        '<div class="help-nav-item ' + (section==='manual'?'active':'') + '" onclick="renderHelp(\'manual\')">' +
+          '<span class="help-nav-icon">📖</span> User Manual' +
+        '</div>' +
+        '<div class="help-nav-item ' + (section==='contact'?'active':'') + '" onclick="renderHelp(\'contact\')">' +
+          '<span class="help-nav-icon">✉️</span> Contact Us' +
+        '</div>' +
+        tocLinks +
+      '</div>' +
+      '<div class="help-body">' +
+        (section === 'contact' ? contactHTML : manualHTML) +
+      '</div>' +
+    '</div>';
+
+  // Smooth scroll for TOC links
+  el.querySelectorAll('.help-toc-link').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      var target = el.querySelector(a.getAttribute('href'));
+      if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+</script>
+</body>
+</html>

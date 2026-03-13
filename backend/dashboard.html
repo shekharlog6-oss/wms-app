@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WMS Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#080a0f;--s1:#0e1118;--s2:#141820;--s3:#1c2230;
+  --border:#1e2535;--border2:#252e42;
+  --accent:#f0c040;--green:#2dd4a0;--red:#f05060;--blue:#4090f0;--purple:#9060f0;--orange:#f07030;
+  --text:#dde2f0;--muted:#5a6480;--font:'IBM Plex Mono',monospace;--display:'Bebas Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 10% 0%,rgba(240,192,64,0.05) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%,rgba(64,144,240,0.04) 0%,transparent 50%);
+}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;
+  border-bottom:1px solid var(--border);background:var(--s1);position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(8px);}
+.hdr-logo{display:flex;align-items:center;gap:14px;}
+.hdr-icon{width:38px;height:38px;background:var(--accent);border-radius:8px;
+  display:grid;place-items:center;font-size:18px;}
+.hdr-title{font-family:var(--display);font-size:1.4rem;letter-spacing:0.05em;color:var(--accent);}
+.hdr-sub{font-size:0.6rem;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;}
+.hdr-right{display:flex;align-items:center;gap:1rem;}
+.hdr-time{font-size:0.75rem;color:var(--muted);letter-spacing:0.06em;}
+.hdr-refresh{background:var(--s3);border:1px solid var(--border2);border-radius:8px;
+  padding:0.4rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.75rem;
+  cursor:pointer;transition:all 0.2s;}
+.hdr-refresh:hover{border-color:var(--accent);color:var(--accent);}
+.hdr-back{background:var(--accent);color:#080a0f;border:none;border-radius:8px;
+  padding:0.4rem 1rem;font-family:var(--display);font-size:0.9rem;letter-spacing:0.05em;
+  cursor:pointer;transition:opacity 0.2s;}
+.hdr-back:hover{opacity:0.85;}
+
+/* ── Layout ── */
+.page{padding:2rem;max-width:1440px;margin:0 auto;}
+
+/* ── KPI Row ── */
+.kpi-row{display:grid;grid-template-columns:repeat(7,1fr);gap:0.8rem;margin-bottom:2rem;}
+.kpi{background:var(--s1);border:1px solid var(--border);border-radius:12px;
+  padding:1rem 1.1rem;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;
+  animation:fade-up 0.5s ease both;}
+.kpi:hover{border-color:var(--border2);transform:translateY(-2px);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kpi-color,var(--accent));}
+.kpi-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);margin-bottom:0.5rem;}
+.kpi-val{font-family:var(--display);font-size:2rem;letter-spacing:0.02em;color:var(--kpi-color,var(--accent));}
+.kpi-sub{font-size:0.65rem;color:var(--muted);margin-top:0.3rem;}
+@keyframes fade-up{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── Section title ── */
+.sec-title{font-family:var(--display);font-size:1.1rem;letter-spacing:0.08em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:1.2rem;padding-bottom:0.6rem;
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sec-title span{color:var(--accent);}
+
+/* ── Chart grid layouts ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;}
+.grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:1.2rem;margin-bottom:1.5rem;}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:1.2rem;margin-bottom:1.5rem;}
+
+/* ── Chart card ── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:14px;
+  padding:1.4rem;position:relative;overflow:hidden;
+  animation:fade-up 0.6s ease both;}
+.card-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.15em;
+  color:var(--muted);margin-bottom:1.2rem;display:flex;align-items:center;gap:8px;}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.chart-wrap{position:relative;}
+.chart-wrap canvas{max-height:220px;}
+.chart-wrap.tall canvas{max-height:280px;}
+.chart-wrap.short canvas{max-height:160px;}
+
+/* ── Inline table ── */
+.mini-table{width:100%;border-collapse:collapse;font-size:0.75rem;margin-top:0.5rem;}
+.mini-table th{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;
+  color:var(--muted);padding:0.4rem 0.6rem;text-align:left;border-bottom:1px solid var(--border);}
+.mini-table td{padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);color:var(--text);}
+.mini-table tr:last-child td{border-bottom:none;}
+.mini-table tr:hover td{background:var(--s2);}
+.pill{display:inline-block;border-radius:20px;padding:1px 8px;font-size:0.68rem;}
+.p-green{background:rgba(45,212,160,0.12);color:var(--green);}
+.p-red{background:rgba(240,80,96,0.12);color:var(--red);}
+.p-orange{background:rgba(240,112,48,0.12);color:var(--orange);}
+.p-blue{background:rgba(64,144,240,0.12);color:var(--blue);}
+.p-grey{background:rgba(90,100,128,0.12);color:var(--muted);}
+
+/* ── Loading overlay ── */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:999;}
+.loading-content{text-align:center;}
+.load-spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;}
+.load-text{font-family:var(--display);font-size:1.2rem;letter-spacing:0.1em;color:var(--accent);}
+.load-sub{font-size:0.7rem;color:var(--muted);margin-top:0.4rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Legend ── */
+.legend{display:flex;flex-wrap:wrap;gap:0.8rem;margin-top:0.8rem;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted);}
+.legend-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── Progress bar ── */
+.progress-list{display:flex;flex-direction:column;gap:0.9rem;margin-top:0.5rem;}
+.prog-item{}
+.prog-header{display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:0.4rem;}
+.prog-label{color:var(--text);}
+.prog-val{color:var(--muted);}
+.prog-bar{height:5px;background:var(--s3);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+
+/* ── Responsive ── */
+@media(max-width:1100px){.kpi-row{grid-template-columns:repeat(4,1fr);}
+  .grid-3,.grid-3-1,.grid-1-2{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr);}
+  .grid-2,.grid-3,.grid-3-1,.grid-1-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-content">
+    <div class="load-spinner"></div>
+    <div class="load-text">Loading Dashboard</div>
+    <div class="load-sub">Fetching live data…</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-logo">
+      <div class="hdr-icon">🏭</div>
+      <div>
+        <div class="hdr-title">WMS Dashboard</div>
+        <div class="hdr-sub">Live Operations Report</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-time" id="clock"></div>
+      <button class="hdr-refresh" onclick="loadAll()">↻ Refresh</button>
+      <button class="hdr-back" onclick="doSignOut()" style="background:var(--red);color:#fff;">⏻ Sign Out</button>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- ── KPIs ── -->
+    <div class="kpi-row" id="kpi-row">
+      <div class="kpi" style="--kpi-color:var(--accent)"><div class="kpi-label">Total Items</div><div class="kpi-val" id="k-items">—</div><div class="kpi-sub">in master</div></div>
+      <div class="kpi" style="--kpi-color:var(--green)"><div class="kpi-label">Active Items</div><div class="kpi-val" id="k-active">—</div><div class="kpi-sub">available</div></div>
+      <div class="kpi" style="--kpi-color:var(--red)"><div class="kpi-label">Out of Stock</div><div class="kpi-val" id="k-out">—</div><div class="kpi-sub">need action</div></div>
+      <div class="kpi" style="--kpi-color:var(--orange)"><div class="kpi-label">Low Stock</div><div class="kpi-val" id="k-low">—</div><div class="kpi-sub">below reorder</div></div>
+      <div class="kpi" style="--kpi-color:var(--blue)"><div class="kpi-label">Suppliers</div><div class="kpi-val" id="k-sup">—</div><div class="kpi-sub">registered</div></div>
+      <div class="kpi" style="--kpi-color:var(--purple)"><div class="kpi-label">Locations</div><div class="kpi-val" id="k-loc">—</div><div class="kpi-sub">warehouse</div></div>
+      <div class="kpi" style="--kpi-color:var(--green)"><div class="kpi-label">Inbound POs</div><div class="kpi-val" id="k-ib">—</div><div class="kpi-sub">total orders</div></div>
+    </div>
+
+    <!-- ── Section 1: Stock & Categories ── -->
+    <div class="sec-title"><span>01</span> Inventory Intelligence</div>
+    <div class="grid-3-1">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Stock by Category</div>
+        <div class="chart-wrap tall"><canvas id="chart-cat-stock"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--red)"></span>Stock Health</div>
+        <div class="chart-wrap"><canvas id="chart-stock-health"></canvas></div>
+        <div class="legend" id="health-legend"></div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Items by Category</div>
+        <div class="chart-wrap"><canvas id="chart-items-cat"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>Item Status Split</div>
+        <div class="chart-wrap"><canvas id="chart-item-status"></canvas></div>
+        <div class="legend" id="status-legend"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Top 5 Low Stock Items</div>
+        <table class="mini-table" id="tbl-low-stock">
+          <thead><tr><th>SKU</th><th>Name</th><th>Stock</th><th>Reorder</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Operations ── -->
+    <div class="sec-title"><span>02</span> Operations</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Inbound Orders by Status</div>
+        <div class="chart-wrap"><canvas id="chart-ib-status"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>Outbound Orders by Status</div>
+        <div class="chart-wrap"><canvas id="chart-ob-status"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Outbound by Priority</div>
+        <div class="chart-wrap"><canvas id="chart-ob-priority"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>Recent Inbound POs</div>
+        <table class="mini-table" id="tbl-recent-ib">
+          <thead><tr><th>PO</th><th>Expected</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>Recent Outbound SOs</div>
+        <table class="mini-table" id="tbl-recent-ob">
+          <thead><tr><th>SO</th><th>Customer</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Master Data ── -->
+    <div class="sec-title"><span>03</span> Master Data Health</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Warehouse Location Utilisation by Zone</div>
+        <div class="chart-wrap"><canvas id="chart-zones"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Supplier Lead Time Distribution</div>
+        <div class="chart-wrap"><canvas id="chart-lead-time"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>UOM Type Breakdown</div>
+        <div class="chart-wrap short"><canvas id="chart-uom"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Location Type Mix</div>
+        <div class="chart-wrap short"><canvas id="chart-loc-type"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>User Role Distribution</div>
+        <div class="chart-wrap short"><canvas id="chart-users"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Section 4: Top Items by Value ── -->
+    <div class="sec-title"><span>04</span> Value Analysis</div>
+    <div class="grid-3-1">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Top 10 Items by Stock Value ($cost × qty)</div>
+        <div class="chart-wrap tall"><canvas id="chart-top-value"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>Stock Value by Category</div>
+        <div class="progress-list" id="value-by-cat"></div>
+      </div>
+    </div>
+
+  </div><!-- end page -->
+</div>
+
+<script>
+const API='http://localhost:5000/api';
+
+// ── Chart defaults ────────────────────────────────────────────────────────────
+Chart.defaults.color='#5a6480';
+Chart.defaults.borderColor='#1e2535';
+Chart.defaults.font.family='IBM Plex Mono';
+Chart.defaults.font.size=11;
+
+const COLORS={
+  accent:'#f0c040',green:'#2dd4a0',red:'#f05060',blue:'#4090f0',
+  purple:'#9060f0',orange:'#f07030',teal:'#20c0b0',pink:'#e040a0',
+};
+const PALETTE=Object.values(COLORS);
+
+function mkChart(id,type,data,options={}){
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx) return;
+  const defaults={
+    responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:'#141820',borderColor:'#252e42',borderWidth:1,
+      titleColor:'#dde2f0',bodyColor:'#5a6480',padding:10,
+    }},
+  };
+  // Deep merge: options.plugins overrides defaults.plugins
+  const merged={
+    ...defaults,
+    ...options,
+    plugins:{...defaults.plugins,...(options.plugins||{})},
+  };
+  return new Chart(ctx,{type,data,options:merged});
+}
+
+function barOptions(axis='x',stacked=false){
+  return{
+    indexAxis:axis,
+    scales:{
+      x:{grid:{color:'#1e2535'},ticks:{color:'#5a6480'},stacked},
+      y:{grid:{color:'#1e2535'},ticks:{color:'#5a6480'},stacked},
+    },
+    plugins:{legend:{display:stacked,position:'bottom',labels:{color:'#5a6480',boxWidth:10,padding:14}}},
+  };
+}
+function doughnutOptions(){
+  return{cutout:'65%',plugins:{legend:{display:false}},};
+}
+
+function makeLegend(containerId,labels,colors){
+  const el=document.getElementById(containerId); if(!el) return;
+  el.innerHTML=labels.map((l,i)=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i%colors.length]}"></div>${l}</div>`
+  ).join('');
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=now.toLocaleString('en-IN',{
+    weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock,1000); updateClock();
+
+// ── Main loader ───────────────────────────────────────────────────────────────
+let _charts={};
+async function loadAll(){
+  // Destroy existing charts
+  Object.values(_charts).forEach(c=>{try{c.destroy();}catch(e){}});
+  _charts={};
+
+  try{
+    const [statsR,itemsR,locR,supR,uomR,usersR,ibR,obR]=await Promise.all([
+      fetch(`${API}/stats`).then(r=>r.json()),
+      fetch(`${API}/items`).then(r=>r.json()),
+      fetch(`${API}/locations`).then(r=>r.json()),
+      fetch(`${API}/suppliers`).then(r=>r.json()),
+      fetch(`${API}/uom`).then(r=>r.json()),
+      fetch(`${API}/users`).then(r=>r.json()),
+      fetch(`${API}/inbound`).then(r=>r.json()),
+      fetch(`${API}/outbound`).then(r=>r.json()),
+    ]);
+
+    const S=statsR.data||{};
+    const items=itemsR.data||[];
+    const locs=locR.data||[];
+    const sups=supR.data||[];
+    const uoms=uomR.data||[];
+    const users=usersR.data||[];
+    const inbounds=ibR.data||[];
+    const outbounds=obR.data||[];
+
+    // ── KPIs ──────────────────────────────────────────────────────────────────
+    setText('k-items',S.items?.total??0);
+    setText('k-active',S.items?.active??0);
+    setText('k-out',S.items?.out_of_stock??0);
+    setText('k-low',S.items?.low_stock??0);
+    setText('k-sup',S.suppliers?.total??0);
+    setText('k-loc',S.locations?.total??0);
+    setText('k-ib',S.inbound?.total??0);
+
+    // ── Stock by Category (horizontal bar) ────────────────────────────────────
+    const catStock={};
+    items.forEach(i=>{ const c=i.category||'Other'; catStock[c]=(catStock[c]||0)+(i.current_stock||0); });
+    const catStockSorted=Object.entries(catStock).sort((a,b)=>b[1]-a[1]);
+    _charts.catStock=mkChart('chart-cat-stock','bar',{
+      labels:catStockSorted.map(x=>x[0]),
+      datasets:[{data:catStockSorted.map(x=>x[1]),backgroundColor:catStockSorted.map((_,i)=>PALETTE[i%PALETTE.length]+'cc'),borderRadius:4}]
+    },{...barOptions('y')});
+
+    // ── Stock Health (doughnut) ───────────────────────────────────────────────
+    const healthy=items.filter(i=>i.current_stock>i.reorder_level).length;
+    const low=S.items?.low_stock||0;
+    const out=S.items?.out_of_stock||0;
+    _charts.health=mkChart('chart-stock-health','doughnut',{
+      labels:['Healthy','Low Stock','Out of Stock'],
+      datasets:[{data:[healthy,low,out],backgroundColor:[COLORS.green+'cc',COLORS.orange+'cc',COLORS.red+'cc'],borderWidth:0}]
+    },doughnutOptions());
+    makeLegend('health-legend',['Healthy','Low Stock','Out of Stock'],[COLORS.green,COLORS.orange,COLORS.red]);
+
+    // ── Items by Category (bar) ───────────────────────────────────────────────
+    const catCount={};
+    items.forEach(i=>{const c=i.category||'Other';catCount[c]=(catCount[c]||0)+1;});
+    const catSorted=Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    _charts.itemsCat=mkChart('chart-items-cat','bar',{
+      labels:catSorted.map(x=>x[0]),
+      datasets:[{data:catSorted.map(x=>x[1]),backgroundColor:COLORS.blue+'99',borderRadius:4}]
+    },{...barOptions(),plugins:{legend:{display:false}}});
+
+    // ── Item Status (doughnut) ────────────────────────────────────────────────
+    const activeCount=items.filter(i=>i.is_active).length;
+    const inactiveCount=items.length-activeCount;
+    _charts.itemStatus=mkChart('chart-item-status','doughnut',{
+      labels:['Active','Inactive'],
+      datasets:[{data:[activeCount,inactiveCount],backgroundColor:[COLORS.green+'cc',COLORS.red+'cc'],borderWidth:0}]
+    },doughnutOptions());
+    makeLegend('status-legend',['Active','Inactive'],[COLORS.green,COLORS.red]);
+
+    // ── Low Stock Table ───────────────────────────────────────────────────────
+    const lowItems=items.filter(i=>i.current_stock<=i.reorder_level&&i.reorder_level>0)
+      .sort((a,b)=>a.current_stock-b.current_stock).slice(0,5);
+    const stCls=s=>s===0?'p-red':'p-orange';
+    document.querySelector('#tbl-low-stock tbody').innerHTML=
+      lowItems.length?lowItems.map(i=>`<tr>
+        <td><span style="color:var(--accent)">${i.sku}</span></td>
+        <td>${i.name.substring(0,22)}${i.name.length>22?'…':''}</td>
+        <td><span class="pill ${stCls(i.current_stock)}">${i.current_stock}</span></td>
+        <td style="color:var(--muted)">${i.reorder_level}</td>
+      </tr>`).join('')
+      :'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1rem">No low stock items 🎉</td></tr>';
+
+    // ── Inbound Status (bar) ──────────────────────────────────────────────────
+    const ibStatus={};
+    inbounds.forEach(o=>{ibStatus[o.status]=(ibStatus[o.status]||0)+1;});
+    const ibColors={'Pending':COLORS.orange,'In Transit':COLORS.blue,'Partially Received':COLORS.accent,'Received':COLORS.green,'Cancelled':COLORS.red};
+    _charts.ibStatus=mkChart('chart-ib-status','bar',{
+      labels:Object.keys(ibStatus),
+      datasets:[{data:Object.values(ibStatus),backgroundColor:Object.keys(ibStatus).map(k=>(ibColors[k]||COLORS.blue)+'cc'),borderRadius:5}]
+    },{...barOptions(),plugins:{legend:{display:false}}});
+
+    // ── Outbound Status (bar) ─────────────────────────────────────────────────
+    const obStatus={};
+    outbounds.forEach(o=>{obStatus[o.status]=(obStatus[o.status]||0)+1;});
+    const obColors={'Pending':COLORS.orange,'Picking':COLORS.blue,'Packed':COLORS.teal,'Dispatched':COLORS.green,'Cancelled':COLORS.red};
+    _charts.obStatus=mkChart('chart-ob-status','bar',{
+      labels:Object.keys(obStatus),
+      datasets:[{data:Object.values(obStatus),backgroundColor:Object.keys(obStatus).map(k=>(obColors[k]||COLORS.purple)+'cc'),borderRadius:5}]
+    },{...barOptions(),plugins:{legend:{display:false}}});
+
+    // ── Outbound Priority (doughnut) ──────────────────────────────────────────
+    const obPri={};
+    outbounds.forEach(o=>{obPri[o.priority]=(obPri[o.priority]||0)+1;});
+    const priColors={Low:COLORS.muted||'#5a6480',Normal:COLORS.blue,High:COLORS.orange,Urgent:COLORS.red};
+    _charts.obPri=mkChart('chart-ob-priority','doughnut',{
+      labels:Object.keys(obPri),
+      datasets:[{data:Object.values(obPri),backgroundColor:Object.keys(obPri).map(k=>(priColors[k]||COLORS.blue)+'cc'),borderWidth:0}]
+    },{...doughnutOptions(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#5a6480',boxWidth:10,padding:12}}}});
+
+    // ── Recent Inbound ────────────────────────────────────────────────────────
+    const recentIB=inbounds.slice(0,5);
+    const ibStPill={Pending:'p-orange','In Transit':'p-blue','Partially Received':'p-orange',Received:'p-green',Cancelled:'p-grey'};
+    document.querySelector('#tbl-recent-ib tbody').innerHTML=
+      recentIB.length?recentIB.map(o=>`<tr>
+        <td style="color:var(--accent)">${o.po_number}</td>
+        <td style="color:var(--muted)">${o.expected_date||'—'}</td>
+        <td><span class="pill ${ibStPill[o.status]||'p-grey'}">${o.status}</span></td>
+      </tr>`).join('')
+      :'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1rem">No orders</td></tr>';
+
+    // ── Recent Outbound ───────────────────────────────────────────────────────
+    const recentOB=outbounds.slice(0,5);
+    const obStPill={Pending:'p-orange',Picking:'p-blue',Packed:'p-blue',Dispatched:'p-green',Cancelled:'p-grey'};
+    document.querySelector('#tbl-recent-ob tbody').innerHTML=
+      recentOB.length?recentOB.map(o=>`<tr>
+        <td style="color:var(--accent)">${o.so_number}</td>
+        <td style="color:var(--muted)">${(o.customer_name||'—').substring(0,14)}</td>
+        <td><span class="pill ${obStPill[o.status]||'p-grey'}">${o.status}</span></td>
+      </tr>`).join('')
+      :'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1rem">No orders</td></tr>';
+
+    // ── Zones (bar) ──────────────────────────────────────────────────────────
+    const zones={};
+    locs.forEach(l=>{if(l.zone) zones[l.zone]=(zones[l.zone]||0)+1;});
+    _charts.zones=mkChart('chart-zones','bar',{
+      labels:Object.keys(zones),
+      datasets:[{data:Object.values(zones),backgroundColor:COLORS.blue+'99',borderRadius:4,label:'Locations'}]
+    },{...barOptions(),plugins:{legend:{display:false}}});
+
+    // ── Supplier Lead Time (bar) ──────────────────────────────────────────────
+    const ltBuckets={'1-7 days':0,'8-14 days':0,'15-30 days':0,'30+ days':0};
+    sups.forEach(s=>{
+      const d=s.lead_time_days||0;
+      if(d<=7) ltBuckets['1-7 days']++;
+      else if(d<=14) ltBuckets['8-14 days']++;
+      else if(d<=30) ltBuckets['15-30 days']++;
+      else ltBuckets['30+ days']++;
+    });
+    _charts.leadTime=mkChart('chart-lead-time','bar',{
+      labels:Object.keys(ltBuckets),
+      datasets:[{data:Object.values(ltBuckets),backgroundColor:[COLORS.green,COLORS.accent,COLORS.orange,COLORS.red].map(c=>c+'cc'),borderRadius:4}]
+    },{...barOptions(),plugins:{legend:{display:false}}});
+
+    // ── UOM Types (doughnut) ──────────────────────────────────────────────────
+    const uomTypes={};
+    uoms.forEach(u=>{uomTypes[u.uom_type]=(uomTypes[u.uom_type]||0)+1;});
+    _charts.uom=mkChart('chart-uom','doughnut',{
+      labels:Object.keys(uomTypes),
+      datasets:[{data:Object.values(uomTypes),backgroundColor:PALETTE.map(c=>c+'cc'),borderWidth:0}]
+    },{...doughnutOptions(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#5a6480',boxWidth:8,padding:10,font:{size:10}}}}});
+
+    // ── Location Types (doughnut) ─────────────────────────────────────────────
+    const locTypes={};
+    locs.forEach(l=>{locTypes[l.loc_type]=(locTypes[l.loc_type]||0)+1;});
+    _charts.locType=mkChart('chart-loc-type','doughnut',{
+      labels:Object.keys(locTypes),
+      datasets:[{data:Object.values(locTypes),backgroundColor:PALETTE.map(c=>c+'bb'),borderWidth:0}]
+    },{...doughnutOptions(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#5a6480',boxWidth:8,padding:10,font:{size:10}}}}});
+
+    // ── Users by Role (doughnut) ──────────────────────────────────────────────
+    const userRoles={};
+    users.forEach(u=>{userRoles[u.role]=(userRoles[u.role]||0)+1;});
+    const roleColors={Admin:COLORS.red,Manager:COLORS.orange,Operator:COLORS.blue,Viewer:COLORS.green};
+    _charts.users=mkChart('chart-users','doughnut',{
+      labels:Object.keys(userRoles),
+      datasets:[{data:Object.values(userRoles),backgroundColor:Object.keys(userRoles).map(k=>(roleColors[k]||COLORS.blue)+'cc'),borderWidth:0}]
+    },{...doughnutOptions(),plugins:{legend:{display:true,position:'bottom',labels:{color:'#5a6480',boxWidth:8,padding:10,font:{size:10}}}}});
+
+    // ── Top 10 by Stock Value (horizontal bar) ────────────────────────────────
+    const byValue=items
+      .filter(i=>i.unit_cost&&i.current_stock)
+      .map(i=>({...i,value:(i.unit_cost||0)*(i.current_stock||0)}))
+      .sort((a,b)=>b.value-a.value).slice(0,10);
+    _charts.topValue=mkChart('chart-top-value','bar',{
+      labels:byValue.map(i=>i.sku||i.name.substring(0,12)),
+      datasets:[{data:byValue.map(i=>i.value.toFixed(2)),
+        backgroundColor:byValue.map((_,idx)=>PALETTE[idx%PALETTE.length]+'cc'),borderRadius:4,label:'Value ($)'}]
+    },{...barOptions('y'),plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>`$${Number(ctx.raw).toLocaleString()}`}}
+    }});
+
+    // ── Stock Value by Category (progress bars) ───────────────────────────────
+    const catVal={};
+    items.forEach(i=>{const c=i.category||'Other';catVal[c]=(catVal[c]||0)+(i.unit_cost||0)*(i.current_stock||0);});
+    const maxVal=Math.max(...Object.values(catVal),1);
+    const catValSorted=Object.entries(catVal).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    document.getElementById('value-by-cat').innerHTML=catValSorted.map(([cat,val],i)=>`
+      <div class="prog-item">
+        <div class="prog-header"><span class="prog-label">${cat}</span><span class="prog-val">$${val.toLocaleString('en',{maximumFractionDigits:0})}</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${(val/maxVal*100).toFixed(1)}%;background:${PALETTE[i%PALETTE.length]}"></div></div>
+      </div>`).join('');
+
+    // ── Show app ──────────────────────────────────────────────────────────────
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+
+  }catch(e){
+    document.getElementById('loading').innerHTML=`<div class="loading-content">
+      <div style="font-size:3rem;margin-bottom:1rem">⚠</div>
+      <div class="load-text" style="color:var(--red)">Connection Error</div>
+      <div class="load-sub" style="margin-top:0.5rem">${e.message}</div>
+      <div class="load-sub">Make sure server.py is running on port 5000</div>
+      <button class="hdr-refresh" style="margin-top:1.5rem" onclick="loadAll()">↻ Retry</button>
+    </div>`;
+  }
+}
+
+function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+
+function doSignOut(){
+  sessionStorage.removeItem('wms_user');
+  window.location.href='index.html';
+}
+
+// Auto-refresh every 60 seconds
+setInterval(loadAll,60000);
+loadAll();
+</script>
+</body>
+</html>
